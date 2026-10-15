@@ -1,25 +1,81 @@
 {
   "expo": {
-    "name": "ronda-react-native",
-    "slug": "ronda-react-native",
-    "version": "1.0.0",
+    "name": "Ronda",
+    "slug": "ronda",
+    "scheme": "ronda",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F5F6F8",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ronda.mobile"
     },
     "android": {
+      "package": "com.ronda.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#096D91",
+        "foregroundImage": "./assets/adaptive-icon-foreground.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "blockedPermissions": [
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-mark.png",
+          "imageWidth": 200,
+          "backgroundColor": "#106F93"
+        }
+      ],
+      "expo-font",
+      "expo-image",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Ronda records your location only when you tap Stamp location on a visit or a form.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Ronda uses your photos when you add one to a visit, a task or a form.",
+          "cameraPermission": "Ronda uses the camera when you take a photo for a visit, a task or a form.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0D729E",
+          "defaultChannel": "default"
+        }
+      ],
+      "./plugins/withBrandAccent"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "dd1be979-b237-4d61-a8f9-1b949cd50ea0"
+      }
     }
   }
 }

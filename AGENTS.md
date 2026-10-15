@@ -25,9 +25,11 @@ Run lint and typecheck before declaring any task done.
 
 ## Navigation & Routing
 
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
+- This project uses **React Navigation 7** (native-stack + bottom-tabs), not Expo Router.
+- Routes and their params are typed in `src/navigation/types.ts`; navigators live in `src/navigation/RootNavigator.tsx`.
+- Screens live in `src/features/<area>/`; shared UI in `src/components/`, API calls in `src/api/`, theme tokens in `src/theme/`.
+- Tab roots use `TabScreen`, pushed screens use `DetailScreen` (`src/components/Screen.tsx`). The floating tab bar is custom (`src/navigation/TabBar.tsx`).
+- Cards, tiles, lists and search boxes sit `space.gutter` from the screen edge, with corners from `radius` (card, tile, inner) in `src/theme/tokens.ts`. Use the tokens; do not hard-code side margins or corner sizes. Headings keep a 20 pt inset.
 
 ## Building with EAS
 
