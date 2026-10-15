@@ -7,7 +7,8 @@ import { splitWhatHappened } from '../../api/visits';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button } from '../../components/Button';
 import { Card, ListRow } from '../../components/Card';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { PressableScale } from '../../components/Pressable';
 import { DetailScreen } from '../../components/Screen';
@@ -62,7 +63,7 @@ export function OutletVisitsScreen({ route, navigation }: RootScreenProps<'Outle
       ) : null}
 
       {visits.isPending ? (
-        <Loading label="Loading visits" />
+        <ListSkeleton label="Loading visits" shape={rowShapes.entry} style={styles.block} />
       ) : visits.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(visits.error)} onRetry={() => visits.refetch()} />

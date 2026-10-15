@@ -10,7 +10,8 @@ import { useAuth } from '../../auth/AuthProvider';
 import { Avatar } from '../../components/Avatar';
 import { CardSlice, ListRow } from '../../components/Card';
 import { ChipRow, Tag } from '../../components/Chips';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { TabScreen } from '../../components/Screen';
@@ -117,7 +118,7 @@ export function OutletsScreen() {
       </View>
 
       {list.isPending ? (
-        <Loading label="Loading outlets" />
+        <ListSkeleton label="Loading outlets" rows={5} shape={rowShapes.outlet} caption="captionStrong" captionStyle={styles.caption} />
       ) : list.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(list.error)} onRetry={() => list.refetch()} />

@@ -9,7 +9,8 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { LoadError, Loading } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { RecordSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { RemotePhotos } from '../../components/PhotoStrip';
 import { DetailScreen } from '../../components/Screen';
@@ -37,7 +38,7 @@ export function VisitReportScreen({ route, navigation }: RootScreenProps<'VisitR
   if (report.isPending) {
     return (
       <DetailScreen backLabel="Back">
-        <Loading label="Loading the visit report" />
+        <RecordSkeleton variant="visit" label="Loading the visit report" />
       </DetailScreen>
     );
   }

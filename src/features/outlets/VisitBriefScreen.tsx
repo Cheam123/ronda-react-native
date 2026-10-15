@@ -4,7 +4,8 @@ import { assistantKeys, briefSections, fetchBrief, writeBrief } from '../../api/
 import { errorMessage } from '../../api/client';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ReadingSkeleton } from '../../components/LoadingSkeletons';
 import { RingIcon } from '../../components/Icon';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -47,7 +48,7 @@ export function VisitBriefScreen({ route }: RootScreenProps<'VisitBrief'>) {
         </Text>
       </View>
       {brief.isPending ? (
-        <Loading />
+        <ReadingSkeleton variant="brief" label="Loading the visit brief" />
       ) : brief.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(brief.error)} onRetry={() => brief.refetch()} />

@@ -20,7 +20,7 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card, ListRow } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { Loading } from '../../components/EmptyState';
+import { ListSkeleton, Skeleton, TextBone, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { PressableScale } from '../../components/Pressable';
 import { BottomBar, DetailScreen } from '../../components/Screen';
@@ -165,7 +165,13 @@ export function RecordOrderScreen({ route, navigation }: RootScreenProps<'Record
           <View style={styles.outletRow}>
             {outlet.data ? <Avatar name={outletName(outlet.data)} size={40} shape="tile" /> : <View style={[styles.emptyTile, { backgroundColor: colors.divider }]} />}
             <View style={styles.flex}>
-              <Text variant="bodyStrong">{outlet.data ? outletName(outlet.data) : outletId ? 'Loading…' : 'Choose an outlet'}</Text>
+              {!outlet.data && outletId ? (
+                <Skeleton label="Loading the outlet">
+                  <TextBone variant="bodyStrong" width={150} />
+                </Skeleton>
+              ) : (
+                <Text variant="bodyStrong">{outlet.data ? outletName(outlet.data) : 'Choose an outlet'}</Text>
+              )}
               <Text variant="footnote" color="ink2">
                 Order date {formatDate(new Date())}
               </Text>
@@ -323,7 +329,7 @@ const ProductPicker = forwardRef<SheetHandle, { products: Product[]; loading: bo
             leading={<Icon name="search" size={20} color={colors.muted} strokeWidth={2} />}
           />
         </View>
-        {loading ? <Loading label="Loading products" /> : null}
+        {loading ? <ListSkeleton label="Loading products" rows={4} shape={rowShapes.product} bare /> : null}
         {shown.map((p) => (
           <ListRow key={p.id} onPress={() => onPick(p)} accessibilityLabel={`${p.name}, ${formatMoney(p.unit_price, currency)} a ${p.unit}`} style={styles.pickRow}>
             <View style={styles.flex}>

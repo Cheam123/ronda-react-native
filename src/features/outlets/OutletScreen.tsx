@@ -18,14 +18,14 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card, ListRow } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { LoadError, Loading } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { BriefSkeleton, OutletSkeleton } from '../../components/LoadingSkeletons';
 import { Icon, MoreDots, RingIcon, type IconName } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { PressableScale } from '../../components/Pressable';
 import { DetailScreen } from '../../components/Screen';
 import { Sheet, SheetAction, type SheetHandle } from '../../components/Sheet';
 import { Text } from '../../components/Text';
-import { RondaRing } from '../../motion/RondaRing';
 import { formatDate, formatDayMonth, formatMoney, formatTime, parseDate, plural } from '../../lib/format';
 import { callNumber, messageNumber } from '../../lib/contact';
 import { haptic } from '../../lib/haptics';
@@ -67,7 +67,7 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
   if (outlet.isPending) {
     return (
       <DetailScreen backLabel="Back">
-        <Loading label="Loading the outlet" />
+        <OutletSkeleton name={route.params.name} />
       </DetailScreen>
     );
   }
@@ -161,9 +161,7 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
           ) : null}
         </View>
         {brief.isPending ? (
-          <View style={styles.briefLoading}>
-            <RondaRing size={28} />
-          </View>
+          <BriefSkeleton />
         ) : brief.data?.brief ? (
           <BriefPreview content={brief.data.brief.content} />
         ) : (
@@ -408,7 +406,6 @@ const styles = StyleSheet.create({
   brief: { marginTop: 28, marginHorizontal: space.gutter, borderRadius: radius.card },
   briefHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   briefTitle: { fontSize: 18, lineHeight: 24 },
-  briefLoading: { paddingVertical: 20, alignItems: 'center' },
   briefEmpty: { marginTop: 10 },
   bullets: { marginTop: 14, gap: 12 },
   bullet: { flexDirection: 'row', gap: 12 },

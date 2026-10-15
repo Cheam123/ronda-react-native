@@ -5,7 +5,8 @@ import { fetchTasks, taskKeys } from '../../api/tasks';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import type { RootScreenProps } from '../../navigation/types';
@@ -37,7 +38,7 @@ export function OutletTasksScreen({ route, navigation }: RootScreenProps<'Outlet
         Tasks
       </Text>
       {open.isPending ? (
-        <Loading label="Loading tasks" />
+        <ListSkeleton label="Loading tasks" shape={rowShapes.taskPlain} caption="captionStrong" captionStyle={styles.group} />
       ) : open.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(open.error)} onRetry={() => open.refetch()} />

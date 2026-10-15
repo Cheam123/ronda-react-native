@@ -5,7 +5,7 @@ import { errorMessage, isApiError, type LocalFile } from '../../api/client';
 import { fetchOutlet, fetchOutletOptions, outletKeys, saveOutlet, type GpsStamp, type OutletDetail } from '../../api/outlets';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { Loading } from '../../components/EmptyState';
+import { FormSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { PhotoStrip } from '../../components/PhotoStrip';
 import { PressableScale } from '../../components/Pressable';
@@ -30,7 +30,7 @@ export function OutletFormScreen({ route, navigation }: RootScreenProps<'OutletF
   if (id && !existing.data) {
     return (
       <DetailScreen modalHeader={{ title: 'Edit outlet', onCancel: () => navigation.goBack() }}>
-        <Loading />
+        <FormSkeleton variant="card" fields={4} label="Loading the outlet" />
       </DetailScreen>
     );
   }

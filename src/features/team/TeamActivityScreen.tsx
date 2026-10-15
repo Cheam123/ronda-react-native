@@ -5,7 +5,8 @@ import { fetchTeam, teamKeys } from '../../api/team';
 import { Avatar } from '../../components/Avatar';
 import { BarChart } from '../../components/BarChart';
 import { Card, ListRow } from '../../components/Card';
-import { Loading, LoadError } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { PersonSkeleton } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatDayMonth, formatMoney, formatShortDay, plural } from '../../lib/format';
@@ -21,7 +22,7 @@ export function TeamActivityScreen({ navigation }: RootScreenProps<'TeamActivity
   if (team.isPending) {
     return (
       <DetailScreen backLabel="Team">
-        <Loading label="Loading" />
+        <PersonSkeleton variant="activity" label="Loading team activity" />
       </DetailScreen>
     );
   }

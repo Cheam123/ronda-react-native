@@ -19,7 +19,7 @@ export function RecordSkeleton({ variant = 'record', label = 'Loading' }: { vari
     <Skeleton label={label}>
       <View style={[styles.head, !record && styles.headVisit]}>
         {record ? <Bone width={120} height={26} radius={radius.pill} /> : <TextBone variant="captionStrong" width={90} />}
-        <TextBone variant="title" size={TITLE_28} width="86%" lines={record ? 2 : 1} lastWidth="48%" style={record ? styles.title : styles.titleVisit} />
+        <TextBone variant="title" size={TITLE_28} width="86%" lines={1} style={record ? styles.title : styles.titleVisit} />
         <View style={styles.from}>
           <CircleBone size={32} />
           <View style={styles.flex}>
@@ -57,8 +57,8 @@ export function RecordSkeleton({ variant = 'record', label = 'Loading' }: { vari
             </View>
             {[0, 1, 2].map((i) => (
               <View key={i} style={[styles.answer, { borderTopColor: colors.divider }]}>
-                <TextBone variant="body" width={(['34%', '44%', '30%'] as const)[i]} />
-                <TextBone variant="body" width={(['28%', '12%', '22%'] as const)[i]} />
+                <TextBone variant="body" width={[118, 150, 104][i]} />
+                <TextBone variant="body" width={[92, 40, 72][i]} />
               </View>
             ))}
           </SkeletonCard>

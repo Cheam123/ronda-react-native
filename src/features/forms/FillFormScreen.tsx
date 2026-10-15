@@ -27,7 +27,8 @@ import { useAuth } from '../../auth/AuthProvider';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { Loading, LoadError } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { FormSkeleton, ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon, type IconName } from '../../components/Icon';
 import { PressableScale } from '../../components/Pressable';
 import { BottomBar } from '../../components/Screen';
@@ -79,7 +80,7 @@ export function FillFormScreen({ route, navigation }: RootScreenProps<'FillForm'
   if (!ready) {
     return (
       <Frame onClose={() => navigation.goBack()}>
-        <Loading label="Opening the form" />
+        <FormSkeleton label="Opening the form" />
       </Frame>
     );
   }
@@ -747,7 +748,7 @@ const ParentSheet = forwardRef<SheetHandle, { formId: number; active: boolean; o
       <View style={styles.sheetSearch}>
         <TextField inSheet value={text} onChangeText={setText} placeholder="Search by name or REC number" accessibilityLabel="Search records" leading={<Icon name="search" size={20} color={colors.muted} strokeWidth={2} />} />
       </View>
-      {parents.isLoading ? <Loading /> : null}
+      {parents.isLoading ? <ListSkeleton label="Loading records" rows={3} shape={rowShapes.entry} bare /> : null}
       {parents.data?.length === 0 ? (
         <Text variant="subhead" color="ink2" style={styles.sheetEmpty}>
           {search ? `No records match “${search}”.` : 'There are no earlier records of this form yet.'}

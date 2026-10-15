@@ -5,7 +5,8 @@ import { digestSections, fetchTeam, teamKeys, type Digest, type TeamPerson } fro
 import { useAuth } from '../../auth/AuthProvider';
 import { Avatar } from '../../components/Avatar';
 import { Card, ListRow } from '../../components/Card';
-import { Loading, LoadError } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { HomeSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { PressableScale } from '../../components/Pressable';
@@ -76,7 +77,7 @@ export function TeamScreen({ navigation }: ManagerTabScreenProps<'Team'>) {
   return (
     <TabScreen title={`${greeting(now)}, ${keepTogether(firstName(user?.name))}`} compactTitle="Team" header={header} onRefresh={() => team.refetch()}>
       {team.isPending ? (
-        <Loading label="Loading your team" />
+        <HomeSkeleton variant="team" label="Loading your team" />
       ) : team.isError || !s ? (
         <View style={styles.section}>
           <LoadError message={errorMessage(team.error)} onRetry={() => team.refetch()} />

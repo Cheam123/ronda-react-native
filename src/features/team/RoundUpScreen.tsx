@@ -3,7 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../api/client';
 import { digestSections, fetchTeam, teamKeys } from '../../api/team';
 import { Card } from '../../components/Card';
-import { EmptyState, Loading, LoadError } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ReadingSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -19,7 +20,7 @@ export function RoundUpScreen() {
   if (team.isPending) {
     return (
       <DetailScreen backLabel="Team">
-        <Loading label="Loading" />
+        <ReadingSkeleton variant="roundUp" label="Loading the Morning Round-Up" />
       </DetailScreen>
     );
   }

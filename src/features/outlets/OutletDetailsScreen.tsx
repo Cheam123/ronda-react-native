@@ -5,7 +5,8 @@ import { fetchOutlet, outletKeys } from '../../api/outlets';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { LoadError, Loading } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { DetailsSkeleton } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatDate } from '../../lib/format';
@@ -79,7 +80,7 @@ export function OutletDetailsScreen({ route, navigation }: RootScreenProps<'Outl
         </Text>
       ) : null}
       {outlet.isPending ? (
-        <Loading />
+        <DetailsSkeleton />
       ) : outlet.isError || !o ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(outlet.error)} onRetry={() => outlet.refetch()} />

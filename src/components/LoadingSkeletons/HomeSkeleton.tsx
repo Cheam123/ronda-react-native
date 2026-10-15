@@ -19,14 +19,15 @@ export function HomeSkeleton({ variant, label = 'Loading' }: { variant: 'today' 
 
   return (
     <Skeleton label={label}>
-      <TextBone variant="callout" width="88%" lines={2} lastWidth="46%" style={styles.summary} />
+      {/* Today's summary is usually one line; Team's names how many people, so two. */}
+      <TextBone variant="callout" width={variant === 'today' ? '62%' : '88%'} lines={variant === 'today' ? 1 : 2} lastWidth="46%" style={styles.summary} />
 
       <View style={[styles.tiles, large && styles.tilesStacked]}>
         {[0, 1, 2, 3].map((i) => (
           <View key={i} style={[large ? styles.tileRow : styles.tile, { backgroundColor: colors.panel, borderColor: colors.cardRing }]}>
             <View style={styles.tileLabel}>
               <Bone width={8} height={8} radius={4} />
-              <TextBone variant="captionStrong" width={large ? 120 : '70%'} style={styles.flex} />
+              <TextBone variant="captionStrong" width={large ? 140 : 84} />
             </View>
             <TextBone variant="number" width={large ? 36 : 30} />
           </View>
@@ -36,7 +37,7 @@ export function HomeSkeleton({ variant, label = 'Loading' }: { variant: 'today' 
       {variant === 'today' ? (
         <View style={styles.section}>
           <View style={styles.sectionHead}>
-            <TextBone variant="section" width="38%" />
+            <TextBone variant="section" width="38%" style={styles.grow} />
           </View>
           <SkeletonCard style={styles.inSection}>
             {[0, 1, 2].map((i) => (
@@ -70,7 +71,8 @@ export function HomeSkeleton({ variant, label = 'Loading' }: { variant: 'today' 
 }
 
 const styles = StyleSheet.create({
-  flex: { flexShrink: 1 },
+  // A bone with a % width in a row needs the row's free space to measure against.
+  grow: { flex: 1 },
   summary: { marginTop: 10, marginHorizontal: 20 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 20, marginHorizontal: space.gutter },
   tilesStacked: { flexDirection: 'column' },

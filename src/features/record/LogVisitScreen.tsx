@@ -12,6 +12,7 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon } from '../../components/Icon';
+import { Skeleton, TextBone } from '../../components/LoadingSkeletons';
 import { DateField } from '../../components/DateField';
 import { PhotoStrip } from '../../components/PhotoStrip';
 import { PressableScale } from '../../components/Pressable';
@@ -158,7 +159,13 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
             <Text variant="footnote" color="ink2">
               Outlet
             </Text>
-            <Text variant="bodyStrong">{o ? outletName(o) : outletId ? 'Loading…' : 'Choose an outlet'}</Text>
+            {!o && outletId ? (
+              <Skeleton label="Loading the outlet">
+                <TextBone variant="bodyStrong" width={150} />
+              </Skeleton>
+            ) : (
+              <Text variant="bodyStrong">{o ? outletName(o) : 'Choose an outlet'}</Text>
+            )}
           </View>
           {taskId ? null : (
             <PressableScale onPress={() => navigation.navigate('PickOutlet', { purpose: 'visit' })} accessibilityRole="button" style={styles.change}>

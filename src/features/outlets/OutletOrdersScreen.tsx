@@ -7,7 +7,8 @@ import { useAuth } from '../../auth/AuthProvider';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { PressableScale } from '../../components/Pressable';
 import { DetailScreen } from '../../components/Screen';
@@ -46,7 +47,7 @@ export function OutletOrdersScreen({ route, navigation }: RootScreenProps<'Outle
       ) : null}
 
       {orders.isPending ? (
-        <Loading label="Loading orders" />
+        <ListSkeleton label="Loading orders" shape={rowShapes.entry} style={styles.block} />
       ) : orders.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(orders.error)} onRetry={() => orders.refetch()} />

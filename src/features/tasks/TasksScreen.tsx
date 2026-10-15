@@ -5,7 +5,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { errorMessage } from '../../api/client';
 import { fetchTasks, taskKeys, type TaskRow } from '../../api/tasks';
 import { Card, CardSlice, ListRow } from '../../components/Card';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { TabScreen } from '../../components/Screen';
@@ -210,7 +211,7 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
 
       {view === 'open' ? (
         open.isPending ? (
-          <Loading label="Loading your tasks" />
+          <ListSkeleton label="Loading your tasks" rows={5} shape={rowShapes.task} caption="captionStrong" />
         ) : open.isError ? (
           <View style={styles.block}>
             <LoadError message={errorMessage(open.error)} onRetry={() => open.refetch()} />
@@ -221,7 +222,7 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
           </Animated.View>
         ) : null
       ) : done.isPending ? (
-        <Loading label="Loading done tasks" />
+        <ListSkeleton label="Loading done tasks" rows={4} shape={rowShapes.taskStatus} caption="captionStrong" />
       ) : done.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(done.error)} onRetry={() => done.refetch()} />

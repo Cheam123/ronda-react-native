@@ -3,7 +3,8 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../api/client';
 import { fetchOutletMedia, outletKeys } from '../../api/outlets';
 import { Card, ListRow } from '../../components/Card';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { DocumentsSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { fileUrl, RemotePhotos } from '../../components/PhotoStrip';
 import { DetailScreen } from '../../components/Screen';
@@ -27,7 +28,7 @@ export function OutletDocumentsScreen({ route }: RootScreenProps<'OutletDocument
         Documents
       </Text>
       {media.isPending ? (
-        <Loading />
+        <DocumentsSkeleton />
       ) : media.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(media.error)} onRetry={() => media.refetch()} />

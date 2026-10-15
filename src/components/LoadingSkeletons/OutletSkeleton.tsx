@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { radius } from '../../theme/tokens';
+import { Text } from '../Text';
 import { SkeletonCard } from './ListSkeleton';
 import { Bone, CircleBone, Skeleton, TextBone } from './Skeleton';
 
@@ -31,13 +32,22 @@ export function BriefSkeleton({ count = 3, label = 'Loading the visit brief' }: 
   );
 }
 
-/** One outlet loading: its tile, name and kind, the four round actions, then the visit brief. */
-export function OutletSkeleton({ label = 'Loading the outlet' }: { label?: string }) {
+/**
+ * One outlet loading: its tile, name and kind, the four round actions, then
+ * the visit brief. With `name` (from the list), the real name shows at once.
+ */
+export function OutletSkeleton({ name, label = 'Loading the outlet' }: { name?: string; label?: string }) {
   return (
     <Skeleton label={label}>
       <View style={styles.header}>
         <Bone width={64} height={64} radius={20} />
-        <TextBone variant="title" width="72%" style={styles.title} />
+        {name ? (
+          <Text variant="title" style={styles.title}>
+            {name}
+          </Text>
+        ) : (
+          <TextBone variant="title" width="72%" style={styles.title} />
+        )}
         <TextBone variant="body" width="40%" style={styles.company} />
         <View style={styles.chips}>
           <Bone width={112} height={28} radius={radius.pill} />

@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { alertKeys, fetchAlerts, markAlertsRead, type Alert, type AlertList } from '../../api/alerts';
 import { errorMessage } from '../../api/client';
 import { CardSlice } from '../../components/Card';
-import { EmptyState, Loading, LoadError } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon, type IconName } from '../../components/Icon';
 import { PressableScale } from '../../components/Pressable';
 import { DetailScreen } from '../../components/Screen';
@@ -92,7 +93,7 @@ export function AlertsScreen() {
       </Text>
 
       {alerts.isPending ? (
-        <Loading label="Loading alerts" />
+        <ListSkeleton label="Loading alerts" rows={4} shape={rowShapes.alert} caption="label" captionStyle={styles.section} />
       ) : alerts.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(alerts.error)} onRetry={() => alerts.refetch()} />

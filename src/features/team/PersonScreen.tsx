@@ -9,7 +9,8 @@ import { Avatar } from '../../components/Avatar';
 import { BarChart } from '../../components/BarChart';
 import { Button } from '../../components/Button';
 import { Card, ListRow } from '../../components/Card';
-import { Loading, LoadError } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { ListSkeleton, PersonSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { DetailScreen } from '../../components/Screen';
@@ -36,7 +37,7 @@ export function PersonScreen({ route, navigation }: RootScreenProps<'Person'>) {
   if (view.isPending) {
     return (
       <DetailScreen backLabel="Team">
-        <Loading label="Loading" />
+        <PersonSkeleton name={route.params.name} />
       </DetailScreen>
     );
   }
@@ -136,7 +137,7 @@ export function PersonScreen({ route, navigation }: RootScreenProps<'Person'>) {
         Open tasks
       </Text>
       {tasks.isPending ? (
-        <Loading />
+        <ListSkeleton label="Loading tasks" rows={3} shape={rowShapes.taskPlain} />
       ) : shown.length === 0 ? (
         <Card padded style={styles.cardH}>
           <Text variant="subhead" color="ink2">
@@ -162,7 +163,7 @@ export function PersonScreen({ route, navigation }: RootScreenProps<'Person'>) {
         Recent visits
       </Text>
       {visits.isPending ? (
-        <Loading />
+        <ListSkeleton label="Loading visits" rows={3} shape={rowShapes.entry} />
       ) : (visits.data ?? []).length === 0 ? (
         <Card padded style={styles.cardH}>
           <Text variant="subhead" color="ink2">

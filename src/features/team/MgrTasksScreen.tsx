@@ -10,7 +10,8 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { CardSlice } from '../../components/Card';
 import { ChipRow, Tag } from '../../components/Chips';
-import { EmptyState, Loading, LoadError } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { TabScreen } from '../../components/Screen';
@@ -141,7 +142,7 @@ export function MgrTasksScreen({ route, navigation }: ManagerTabScreenProps<'Mgr
       </Text>
 
       {current.isPending ? (
-        <Loading label="Loading tasks" />
+        <ListSkeleton label="Loading tasks" rows={5} shape={rowShapes.managerTask} />
       ) : current.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(current.error)} onRetry={() => current.refetch()} />

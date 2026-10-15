@@ -4,7 +4,8 @@ import { errorMessage } from '../../api/client';
 import { fetchRecentReports, needsSupport, recentKey, type VisitReportDetail } from '../../api/visits';
 import { CardSlice, ListRow } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { EmptyState, Loading, LoadError } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -38,7 +39,7 @@ export function MyVisitsScreen({ navigation }: RootScreenProps<'MyVisits'>) {
         The last {DAYS} days
       </Text>
       {visits.isPending ? (
-        <Loading label="Loading visits" />
+        <ListSkeleton label="Loading visits" shape={rowShapes.entry} style={styles.block} />
       ) : visits.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(visits.error)} onRetry={() => visits.refetch()} />

@@ -4,7 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../api/client';
 import { fetchTasks, taskKeys } from '../../api/tasks';
 import { CardSlice } from '../../components/Card';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -68,7 +69,7 @@ export function TaskSearchScreen({ navigation }: RootScreenProps<'TaskSearch'>) 
           Type at least 2 letters.
         </Text>
       ) : results.isPending ? (
-        <Loading label="Searching" />
+        <ListSkeleton label="Searching" rows={3} shape={rowShapes.taskStatus} />
       ) : results.isError ? (
         <LoadError message={errorMessage(results.error)} onRetry={() => results.refetch()} />
       ) : (results.data ?? []).length === 0 ? (

@@ -10,7 +10,8 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card, ListRow } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { LoadError, Loading } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { TaskSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { PhotoStrip, RemotePhotos } from '../../components/PhotoStrip';
 import { PressableScale } from '../../components/Pressable';
@@ -75,7 +76,7 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
   if (task.isPending) {
     return (
       <DetailScreen backLabel="Tasks">
-        <Loading label="Loading the task" />
+        <TaskSkeleton title={route.params.title} />
       </DetailScreen>
     );
   }

@@ -4,7 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../api/client';
 import { fetchOutlets, outletKeys } from '../../api/outlets';
 import { CardSlice } from '../../components/Card';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -63,7 +64,7 @@ export function PickOutletScreen({ route, navigation }: RootScreenProps<'PickOut
         />
       </View>
       {list.isPending ? (
-        <Loading />
+        <ListSkeleton label="Loading outlets" rows={5} shape={rowShapes.outlet} caption="captionStrong" captionStyle={styles.caption} />
       ) : list.isError ? (
         <LoadError message={errorMessage(list.error)} onRetry={() => list.refetch()} />
       ) : rows.length === 0 ? (

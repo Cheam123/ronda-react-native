@@ -9,7 +9,8 @@ import { fetchRecentReports, needsSupport, recentKey, splitWhatHappened, type Vi
 import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { EmptyState, Loading, LoadError } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { TabScreen } from '../../components/Screen';
 import { Segmented } from '../../components/Segmented';
 import { MetaLine } from '../../components/PlaceAndNote';
@@ -80,7 +81,7 @@ export function ReviewScreen({ route, navigation }: ManagerTabScreenProps<'Revie
       )}
 
       {current.isPending ? (
-        <Loading label="Loading" />
+        <ListSkeleton label="Loading" shape={rowShapes.review} />
       ) : current.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(current.error)} onRetry={() => current.refetch()} />

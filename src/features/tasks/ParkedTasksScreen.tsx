@@ -3,7 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../api/client';
 import { fetchTasks, taskKeys } from '../../api/tasks';
 import { Card } from '../../components/Card';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import type { RootScreenProps } from '../../navigation/types';
@@ -24,7 +25,7 @@ export function ParkedTasksScreen({ navigation }: RootScreenProps<'ParkedTasks'>
         These are paused. They come back to your open tasks when someone starts them again.
       </Text>
       {parked.isPending ? (
-        <Loading />
+        <ListSkeleton label="Loading tasks" rows={3} shape={rowShapes.taskPlain} style={styles.block} />
       ) : parked.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(parked.error)} onRetry={() => parked.refetch()} />

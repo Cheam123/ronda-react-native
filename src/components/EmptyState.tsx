@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { RondaRing } from '../motion/RondaRing';
 import { useColors } from '../theme/ThemeProvider';
 import { space } from '../theme/tokens';
 import { Button } from './Button';
@@ -40,15 +39,6 @@ export function EmptyState({ title, body, icon, action, children }: EmptyStatePr
   );
 }
 
-/** Full-area loading state with the Ronda ring. */
-export function Loading({ label = 'Loading' }: { label?: string }) {
-  return (
-    <View style={styles.loading}>
-      <RondaRing size={44} accessibilityLabel={label} />
-    </View>
-  );
-}
-
 /** A load failed: say so plainly and offer to try again. */
 export function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
@@ -65,5 +55,4 @@ const styles = StyleSheet.create({
   card: { marginHorizontal: space.gutter, alignItems: 'center', gap: 6 },
   icon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   action: { marginTop: 10, alignSelf: 'stretch' },
-  loading: { paddingVertical: 48, alignItems: 'center', justifyContent: 'center' },
 });

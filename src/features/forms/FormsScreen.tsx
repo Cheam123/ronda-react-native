@@ -8,6 +8,7 @@ import { fetchFormTurns, fetchRecords, formKeys, type FormTurn } from '../../api
 import { useAuth } from '../../auth/AuthProvider';
 import { Card, ListRow } from '../../components/Card';
 import { Icon } from '../../components/Icon';
+import { Skeleton, TextBone } from '../../components/LoadingSkeletons';
 import { MetaLine } from '../../components/PlaceAndNote';
 import { TabScreen } from '../../components/Screen';
 import { SearchBox } from '../../components/SearchBox';
@@ -71,9 +72,15 @@ export function FormsScreen() {
             </View>
             <View style={styles.flex}>
               <Text variant="rowTitle">My records</Text>
-              <Text variant="subhead" color="ink2">
-                {records.isPending ? 'Loading' : mine.length === 0 ? 'Forms you send are kept here' : `${plural(mine.length, 'record')}${inReview ? ` · ${inReview} in review` : ''}`}
-              </Text>
+              {records.isPending ? (
+                <Skeleton label="Loading your records">
+                  <TextBone variant="subhead" width={96} />
+                </Skeleton>
+              ) : (
+                <Text variant="subhead" color="ink2">
+                  {mine.length === 0 ? 'Forms you send are kept here' : `${plural(mine.length, 'record')}${inReview ? ` · ${inReview} in review` : ''}`}
+                </Text>
+              )}
             </View>
           </ListRow>
         </Card>

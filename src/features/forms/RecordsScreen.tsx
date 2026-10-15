@@ -6,7 +6,8 @@ import { fetchRecords, formKeys, type RecordRow } from '../../api/forms';
 import { useAuth } from '../../auth/AuthProvider';
 import { CardSlice, ListRow } from '../../components/Card';
 import { ChipRow, Tag } from '../../components/Chips';
-import { EmptyState, Loading, LoadError } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { relativeDay } from '../../lib/format';
@@ -64,7 +65,7 @@ export function RecordsScreen({ navigation }: RootScreenProps<'Records'>) {
       </View>
 
       {records.isPending ? (
-        <Loading label="Loading records" />
+        <ListSkeleton label="Loading records" shape={rowShapes.record} style={styles.firstSlice} />
       ) : records.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(records.error)} onRetry={() => records.refetch()} />

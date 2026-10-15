@@ -24,7 +24,8 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card, ListRow } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { Loading, LoadError } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { RecordSkeleton } from '../../components/LoadingSkeletons';
 import { Icon, MoreDots } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { PressableScale } from '../../components/Pressable';
@@ -134,7 +135,7 @@ export function RecordScreen({ route, navigation }: RootScreenProps<'Record'>) {
   if (!record.data || !entry.data) {
     return (
       <DetailScreen>
-        <Loading label="Loading the record" />
+        <RecordSkeleton label="Loading the record" />
       </DetailScreen>
     );
   }

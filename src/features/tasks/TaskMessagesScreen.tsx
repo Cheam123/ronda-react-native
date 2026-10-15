@@ -8,7 +8,8 @@ import { errorMessage, type LocalFile } from '../../api/client';
 import { homeKey } from '../../api/home';
 import { taskKeys } from '../../api/tasks';
 import { useAuth } from '../../auth/AuthProvider';
-import { LoadError, Loading } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { MessagesSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { PhotoStrip, RemotePhotos } from '../../components/PhotoStrip';
 import { PressableScale } from '../../components/Pressable';
@@ -126,7 +127,7 @@ export function TaskMessagesScreen({ route, navigation }: RootScreenProps<'TaskM
       </View>
 
       {chat.isPending ? (
-        <Loading label="Loading messages" />
+        <MessagesSkeleton />
       ) : chat.isError ? (
         <View style={styles.pad}>
           <LoadError message={errorMessage(chat.error)} onRetry={() => chat.refetch()} />

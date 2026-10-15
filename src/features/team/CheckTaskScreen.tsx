@@ -9,7 +9,8 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card, ListRow } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { Loading, LoadError } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { TaskSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { RemotePhotos } from '../../components/PhotoStrip';
 import { ProgressSteps } from '../../components/ProgressSteps';
@@ -62,7 +63,7 @@ export function CheckTaskScreen({ route, navigation }: RootScreenProps<'CheckTas
   if (task.isPending) {
     return (
       <DetailScreen backLabel="Tasks">
-        <Loading label="Loading the task" />
+        <TaskSkeleton variant="check" title={route.params.title} />
       </DetailScreen>
     );
   }

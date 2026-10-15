@@ -7,7 +7,8 @@ import { fetchHome, homeKey, type DayAtAGlance, type DayTask, type FormStep } fr
 import { useAuth } from '../../auth/AuthProvider';
 import { Avatar } from '../../components/Avatar';
 import { Card, ListRow } from '../../components/Card';
-import { LoadError, Loading } from '../../components/EmptyState';
+import { LoadError } from '../../components/EmptyState';
+import { HomeSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { PressableScale } from '../../components/Pressable';
@@ -169,7 +170,7 @@ export function TodayScreen({ navigation }: RepTabScreenProps<'Today'>) {
       onRefresh={() => home.refetch()}
     >
       {home.isPending ? (
-        <Loading label="Loading your day" />
+        <HomeSkeleton variant="today" label="Loading your day" />
       ) : home.isError ? (
         <View style={styles.section}>
           <LoadError message={errorMessage(home.error)} onRetry={() => home.refetch()} />

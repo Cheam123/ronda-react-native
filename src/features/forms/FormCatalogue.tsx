@@ -4,7 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../api/client';
 import { fetchForms, formKeys, type FormListItem, type GroupRef } from '../../api/forms';
 import { Card, ListRow } from '../../components/Card';
-import { EmptyState, Loading, LoadError } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Text } from '../../components/Text';
 import { radius, space } from '../../theme/tokens';
 
@@ -37,7 +38,7 @@ export function FormCatalogue({
   search: string;
   onPick: (form: FormListItem) => void;
 }) {
-  if (loading) return <Loading label="Loading forms" />;
+  if (loading) return <ListSkeleton label="Loading forms" rows={3} shape={rowShapes.form} caption="captionStrong" captionStyle={[styles.heading, styles.firstHeading]} style={styles.card} />;
   if (error) return <LoadError message={errorMessage(error)} onRetry={onRetry} />;
   if (forms.length === 0) {
     return (

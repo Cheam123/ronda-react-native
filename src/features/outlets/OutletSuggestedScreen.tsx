@@ -9,7 +9,8 @@ import { fetchRecommendations, outletKeys, type RecommendationItem } from '../..
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Tag } from '../../components/Chips';
-import { EmptyState, LoadError, Loading } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { PressableScale } from '../../components/Pressable';
 import { DetailScreen } from '../../components/Screen';
@@ -61,7 +62,7 @@ export function OutletSuggestedScreen({ route, navigation }: RootScreenProps<'Ou
       </Text>
 
       {recs.isPending ? (
-        <Loading label="Checking similar outlets" />
+        <ListSkeleton label="Checking similar outlets" rows={3} shape={rowShapes.form} style={styles.block} />
       ) : recs.isError || !data ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(recs.error)} onRetry={() => recs.refetch()} />

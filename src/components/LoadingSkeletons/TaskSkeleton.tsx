@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
-import { radius, space } from '../../theme/tokens';
+import { radius } from '../../theme/tokens';
+import { Text } from '../Text';
 import { SkeletonCard } from './ListSkeleton';
 import { Bone, CircleBone, Skeleton, TextBone } from './Skeleton';
 
@@ -8,9 +9,10 @@ const TITLE_28 = { fontSize: 28, lineHeight: 34 };
 /**
  * One task loading: the pills and title, then the cards below them. For the
  * rep's Task, the outlet card and the progress; for Check done work, who did
- * it and what they did.
+ * it and what they did. With `title` (from the list that opened it), the
+ * real title shows at once, so it never moves.
  */
-export function TaskSkeleton({ variant = 'task', label = 'Loading the task' }: { variant?: 'task' | 'check'; label?: string }) {
+export function TaskSkeleton({ variant = 'task', title, label = 'Loading the task' }: { variant?: 'task' | 'check'; title?: string; label?: string }) {
   return (
     <Skeleton label={label}>
       <View style={[styles.header, variant === 'check' && styles.headerCheck]}>
@@ -18,7 +20,13 @@ export function TaskSkeleton({ variant = 'task', label = 'Loading the task' }: {
           <Bone width={104} height={26} radius={radius.pill} />
           {variant === 'task' ? <Bone width={118} height={26} radius={radius.pill} /> : null}
         </View>
-        <TextBone variant="title" size={variant === 'task' ? TITLE_28 : undefined} width="90%" lines={2} lastWidth="52%" style={styles.title} />
+        {title ? (
+          <Text variant="title" style={[styles.title, variant === 'task' && TITLE_28]}>
+            {title}
+          </Text>
+        ) : (
+          <TextBone variant="title" size={variant === 'task' ? TITLE_28 : undefined} width="90%" lines={2} lastWidth="52%" style={styles.title} />
+        )}
         {variant === 'check' ? (
           <View style={styles.doer}>
             <CircleBone size={32} />

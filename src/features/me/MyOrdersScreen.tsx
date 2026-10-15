@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '../../api/client';
 import { fetchMyOrders, meKeys } from '../../api/me';
-import { EmptyState, Loading, LoadError } from '../../components/EmptyState';
+import { EmptyState, LoadError } from '../../components/EmptyState';
+import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatMoney } from '../../lib/format';
@@ -26,7 +27,7 @@ export function MyOrdersScreen() {
         </Text>
       ) : null}
       {orders.isPending ? (
-        <Loading label="Loading orders" />
+        <ListSkeleton label="Loading orders" shape={rowShapes.entry} style={styles.block} />
       ) : orders.isError ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(orders.error)} onRetry={() => orders.refetch()} />
