@@ -24,7 +24,12 @@ const TAB_ICONS: Record<string, IconName | 'ring'> = {
   Forms: 'forms',
 };
 
-/** Above this text size the labels drop and the icons grow (TodayLarge board). */
+/**
+ * Above this text size the bar grows and so do its labels. The TodayLarge
+ * board dropped the labels here, but that leaves Today and Team as the bare
+ * Ronda ring, which no one can name without its word: the people who set
+ * large text are the ones who most need it.
+ */
 const LARGE_TEXT = 1.35;
 
 /** Height of the floating bar plus its gap to the screen edge, for content padding. */
@@ -104,7 +109,7 @@ export function TabBar({ state, descriptors, navigation, withRecord }: BottomTab
             const badge = options.tabBarBadge;
             const tint = focused ? colors.tabBar.active : colors.tabBar.inactive;
             const iconName = TAB_ICONS[route.name] ?? 'tasks';
-            const iconSize = large ? 30 : 24;
+            const iconSize = large ? 26 : 24;
 
             const onPress = () => {
               const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -138,17 +143,15 @@ export function TabBar({ state, descriptors, navigation, withRecord }: BottomTab
                     </View>
                   ) : null}
                 </View>
-                {large ? null : (
-                  <Text
-                    variant="tab"
-                    color={tint}
-                    allowFontScaling={false}
-                    numberOfLines={1}
-                    style={{ fontFamily: focused ? 'InstrumentSans_700Bold' : 'InstrumentSans_600SemiBold' }}
-                  >
-                    {label}
-                  </Text>
-                )}
+                <Text
+                  variant="tab"
+                  color={tint}
+                  allowFontScaling={false}
+                  numberOfLines={1}
+                  style={[{ fontFamily: focused ? 'InstrumentSans_700Bold' : 'InstrumentSans_600SemiBold' }, large && styles.labelLarge]}
+                >
+                  {label}
+                </Text>
               </Pressable>
             );
           })}
@@ -198,4 +201,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: { fontFamily: 'InstrumentSans_700Bold', fontSize: 11, lineHeight: 14 },
+  // Fixed, not scaled again: the five manager tabs still fit at 13.
+  labelLarge: { fontSize: 13, lineHeight: 16 },
 });

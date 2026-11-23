@@ -11,6 +11,7 @@ import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatDateTime } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { space } from '../../theme/tokens';
@@ -49,7 +50,7 @@ export function VisitBriefScreen({ route }: RootScreenProps<'VisitBrief'>) {
       </View>
       {brief.isPending ? (
         <ReadingSkeleton variant="brief" label="Loading the visit brief" />
-      ) : brief.isError ? (
+      ) : failedToLoad(brief) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(brief.error)} onRetry={() => brief.refetch()} />
         </View>
@@ -60,7 +61,7 @@ export function VisitBriefScreen({ route }: RootScreenProps<'VisitBrief'>) {
       ) : (
         <>
           <Text variant="caption" color="ink2" style={styles.meta}>
-            {b.source === 'bedrock' ? 'Written by Claude (Amazon Bedrock)' : 'Written from the records (Claude is not set up yet)'} on {formatDateTime(b.generated_at)}
+            {b.source === 'claude' ? 'Written by Claude' : 'Written from the records (Claude is not set up yet)'} on {formatDateTime(b.generated_at)}
             {b.generated_by ? ` for ${b.generated_by}` : ''}, from this outlet’s visits, orders and tasks.
           </Text>
           {b.stale ? (

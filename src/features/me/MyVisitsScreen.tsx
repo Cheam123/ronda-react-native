@@ -11,6 +11,7 @@ import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { parseStampText } from '../../lib/location';
 import { friendlyDateTime } from '../../lib/taskCopy';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 
@@ -27,7 +28,7 @@ export function MyVisitsScreen({ navigation }: RootScreenProps<'MyVisits'>) {
       backLabel="Me"
       onRefresh={() => visits.refetch()}
       list={{
-        data: visits.isPending || visits.isError ? [] : list,
+        data: visits.isPending || failedToLoad(visits) ? [] : list,
         keyExtractor: (v) => String(v.id),
         renderItem: (v, i) => <VisitRow visit={v} first={i === 0} last={i === list.length - 1} onPress={() => navigation.navigate('VisitReport', { id: v.id, ids: list.map((x) => x.id) })} />,
       }}
@@ -40,7 +41,7 @@ export function MyVisitsScreen({ navigation }: RootScreenProps<'MyVisits'>) {
       </Text>
       {visits.isPending ? (
         <ListSkeleton label="Loading visits" shape={rowShapes.entry} style={styles.block} />
-      ) : visits.isError ? (
+      ) : failedToLoad(visits) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(visits.error)} onRetry={() => visits.refetch()} />
         </View>

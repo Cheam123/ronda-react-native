@@ -48,7 +48,7 @@ export interface DashboardSummary {
 
 export interface Digest {
   date_label: string;
-  /** "bedrock" when Claude wrote it, "template" otherwise. */
+  /** "claude" when Claude wrote it, "template" otherwise. */
   source: string;
   content: string;
   digest_date: string | null;

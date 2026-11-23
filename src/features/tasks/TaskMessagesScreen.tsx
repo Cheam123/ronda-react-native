@@ -18,6 +18,7 @@ import { Text } from '../../components/Text';
 import { formatDate, formatTime, isSameDay, parseDate } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { addPhotos } from '../../lib/photos';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { fonts } from '../../theme/type';
@@ -128,7 +129,7 @@ export function TaskMessagesScreen({ route, navigation }: RootScreenProps<'TaskM
 
       {chat.isPending ? (
         <MessagesSkeleton />
-      ) : chat.isError ? (
+      ) : failedToLoad(chat) ? (
         <View style={styles.pad}>
           <LoadError message={errorMessage(chat.error)} onRetry={() => chat.refetch()} />
         </View>

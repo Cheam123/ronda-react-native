@@ -32,6 +32,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const Input = (inSheet ? BottomSheetTextInput : TextInput) as typeof TextInput;
   const multiline = multilineProp || grow;
   const tall = multilineProp && !grow;
+  // What a screen reader says on the field itself: the name, that it is optional, and what is wrong.
+  const spoken = [rest.accessibilityLabel ?? label, optional ? 'optional' : null, error ? `Error: ${error}` : null].filter(Boolean).join(', ');
 
   return (
     <View style={styles.wrap}>
@@ -72,7 +74,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           ref={ref}
           {...rest}
           multiline={multiline}
-          accessibilityLabel={rest.accessibilityLabel ?? label}
+          accessibilityLabel={spoken || undefined}
+          accessibilityHint={rest.accessibilityHint ?? (error ? undefined : hint)}
           placeholderTextColor={colors.muted}
           selectionColor={colors.brand}
           onFocus={(e) => {

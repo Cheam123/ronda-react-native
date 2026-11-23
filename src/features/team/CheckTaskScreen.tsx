@@ -22,6 +22,7 @@ import { TextField } from '../../components/TextField';
 import { firstName, formatDateTime, formatMoney, parseDate } from '../../lib/format';
 import { parseStampText } from '../../lib/location';
 import { doneNote, dueMoment, formatDue, statusColors } from '../../lib/taskCopy';
+import { failedToLoad } from '../../lib/query';
 import { riseIn, settleIn } from '../../motion/curves';
 import { useReducedMotion } from '../../motion/useReducedMotion';
 import type { RootScreenProps } from '../../navigation/types';
@@ -67,7 +68,7 @@ export function CheckTaskScreen({ route, navigation }: RootScreenProps<'CheckTas
       </DetailScreen>
     );
   }
-  if (task.isError || !task.data) {
+  if (failedToLoad(task) || !task.data) {
     return (
       <DetailScreen backLabel="Tasks">
         <LoadError message={errorMessage(task.error)} onRetry={() => task.refetch()} />

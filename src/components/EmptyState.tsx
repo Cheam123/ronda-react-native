@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useColors } from '../theme/ThemeProvider';
 import { space } from '../theme/tokens';
@@ -11,7 +11,7 @@ interface EmptyStateProps {
   title: string;
   body?: string;
   icon?: IconName;
-  action?: { label: string; onPress: () => void };
+  action?: { label: string; onPress: () => void; loading?: boolean };
   children?: ReactNode;
 }
 
@@ -34,20 +34,25 @@ export function EmptyState({ title, body, icon, action, children }: EmptyStatePr
         </Text>
       ) : null}
       {children}
-      {action ? <Button label={action.label} onPress={action.onPress} variant="secondary" size="medium" style={styles.action} /> : null}
+      {action ? <Button label={action.label} onPress={action.onPress} loading={action.loading} variant="secondary" size="medium" style={styles.action} /> : null}
     </Card>
   );
 }
 
-/** A load failed: say so plainly and offer to try again. */
-export function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+/**
+ * A load failed: say so plainly and offer to try again. The button shows it
+ * is working until the retry settles, so a tap never looks ignored.
+ */
+export function LoadError({ message, onRetry }: { message: string; onRetry: () => unknown }) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = () => {
+    setRetrying(true);
+    Promise.resolve(onRetry())
+      .catch(() => undefined)
+      .finally(() => setRetrying(false));
+  };
   return (
-    <EmptyState
-      icon="alert"
-      title="We could not load this"
-      body={message}
-      action={{ label: 'Try again', onPress: onRetry }}
-    />
+    <EmptyState icon="alert" title="We could not load this" body={message} action={{ label: 'Try again', onPress: retry, loading: retrying }} />
   );
 }
 

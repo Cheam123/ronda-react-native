@@ -80,8 +80,8 @@ export function SelectField<V extends string | number>(props: SingleProps<V> | M
         onPress={() => !disabled && sheet.current?.open()}
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${shown || 'not chosen'}`}
-        accessibilityHint="Opens the choices"
+        accessibilityLabel={[label, shown || 'not chosen', optional ? 'optional' : null, error ? `Error: ${error}` : null].filter(Boolean).join(', ')}
+        accessibilityHint={hint && !error ? `${hint}. Opens the choices` : 'Opens the choices'}
         style={({ pressed }) => [
           styles.box,
           {
@@ -97,7 +97,7 @@ export function SelectField<V extends string | number>(props: SingleProps<V> | M
         <Icon name="chevronDown" size={20} color={colors.chevron} strokeWidth={2.2} />
       </Pressable>
       {error ? (
-        <Text variant="caption" color="danger">
+        <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
           {error}
         </Text>
       ) : hint ? (

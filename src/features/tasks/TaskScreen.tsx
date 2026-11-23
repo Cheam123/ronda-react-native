@@ -22,9 +22,10 @@ import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
 import { riseIn, settleIn } from '../../motion/curves';
 import { useReducedMotion } from '../../motion/useReducedMotion';
-import { firstName } from '../../lib/format';
+import { amountProblem, firstName } from '../../lib/format';
 import { formatDue, friendlyDateTime, riskChip, statusColors, statusLabel } from '../../lib/taskCopy';
 import { clearTaskSales, takeTaskSales } from '../../lib/visitHandoff';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useBackLabel } from '../../navigation/usePreviousTitle';
 import { useColors } from '../../theme/ThemeProvider';
@@ -80,7 +81,7 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
       </DetailScreen>
     );
   }
-  if (task.isError || !task.data) {
+  if (failedToLoad(task) || !task.data) {
     return (
       <DetailScreen backLabel="Tasks">
         <View style={styles.pad}>
@@ -111,7 +112,10 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
     { key: 'visit', label: 'Log a visit here', hint: `At ${outletName}` },
     { key: 'messages', label: `Message ${firstName(checker)}`, hint: 'Open the task messages' },
   ].filter(Boolean) as { key: string; label: string; hint: string }[];
-  const details: { label: string; value: string; tone?: string; strong?: boolean; mono?: boolean }[] = [
+  // Say what More holds, as the sheet will list it.
+  const moreLabel = `More: ${moreActions.map((a) => a.label.toLowerCase()).join(', ')}`;
+  const salesError = amountProblem(sales);
+  const details:{ label: string; value: string; tone?: string; strong?: boolean; mono?: boolean }[] = [
     { label: 'Due', value: formatDue(due), tone: t.risk === 'overdue' && shownStatus <= 2 ? colors.tones.critical.ink : undefined, strong: true },
     { label: 'Checker', value: checker },
     // Not on your own task: the board leaves it out, it is you.
@@ -174,17 +178,13 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
     );
   };
 
-  const runMore = async (key: string) => {
+  const runMore = (key: string) => {
     moreSheet.current?.close();
-    try {
-      if (key === 'kiv') await actions.keepInView(t.id);
-      if (key === 'hold') await actions.hold(t.id);
-      if (key === 'visit') navigation.navigate('LogVisit', { outletId: t.lead_id ?? undefined, taskId: t.id });
-      if (key === 'messages') navigation.navigate('TaskMessages', { id: t.id, title: t.title });
-      if (key === 'kiv' || key === 'hold') task.refetch();
-    } catch (e) {
-      Alert.alert('We could not change the task', errorMessage(e));
-    }
+    // Parking waits 5 s with Undo in the toast; the screen shows the new status once it is sent.
+    if (key === 'kiv') actions.keepInView(t.id, { onDone: () => task.refetch() });
+    if (key === 'hold') actions.hold(t.id, { onDone: () => task.refetch() });
+    if (key === 'visit') navigation.navigate('LogVisit', { outletId: t.lead_id ?? undefined, taskId: t.id });
+    if (key === 'messages') navigation.navigate('TaskMessages', { id: t.id, title: t.title });
   };
 
   const bottomBar = justDone ? (
@@ -194,12 +194,12 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
     </>
   ) : isNew ? (
     <>
-      <Button label="More" variant="secondary" style={styles.side} onPress={() => moreSheet.current?.open()} accessibilityLabel="More: keep in view, log a visit, message" />
+      <Button label="More" variant="secondary" style={styles.side} onPress={() => moreSheet.current?.open()} accessibilityLabel={moreLabel} />
       <Button label="Start task" style={styles.flex} onPress={start} loading={busy} />
     </>
   ) : inProgress ? (
     <>
-      <Button label="More" variant="secondary" style={styles.side} onPress={() => moreSheet.current?.open()} accessibilityLabel="More: keep in view, log a visit, message" />
+      <Button label="More" variant="secondary" style={styles.side} onPress={() => moreSheet.current?.open()} accessibilityLabel={moreLabel} />
       <Button label="Mark as done" style={styles.flex} onPress={openDone} />
     </>
   ) : null;
@@ -342,7 +342,7 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
         footer={
           <>
             <Button label="Cancel" variant="secondary" style={styles.flex} onPress={() => doneSheet.current?.close()} />
-            <Button label="Mark as done" style={styles.flexMore} onPress={confirmDone} />
+            <Button label="Mark as done" style={styles.flexMore} onPress={confirmDone} disabled={!!salesError} />
           </>
         }
       >
@@ -365,6 +365,7 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
                 optional
                 value={sales}
                 onChangeText={setSales}
+                error={salesError}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 leading={

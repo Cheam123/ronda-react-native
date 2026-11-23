@@ -14,6 +14,7 @@ import { PressableScale } from '../../components/Pressable';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatDate, formatMoney, plural } from '../../lib/format';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
@@ -48,7 +49,7 @@ export function OutletOrdersScreen({ route, navigation }: RootScreenProps<'Outle
 
       {orders.isPending ? (
         <ListSkeleton label="Loading orders" shape={rowShapes.entry} style={styles.block} />
-      ) : orders.isError ? (
+      ) : failedToLoad(orders) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(orders.error)} onRetry={() => orders.refetch()} />
         </View>

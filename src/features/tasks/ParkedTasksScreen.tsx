@@ -7,6 +7,7 @@ import { EmptyState, LoadError } from '../../components/EmptyState';
 import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { TaskRowItem } from './TaskRowItem';
 import { space } from '../../theme/tokens';
@@ -26,7 +27,7 @@ export function ParkedTasksScreen({ navigation }: RootScreenProps<'ParkedTasks'>
       </Text>
       {parked.isPending ? (
         <ListSkeleton label="Loading tasks" rows={3} shape={rowShapes.taskPlain} style={styles.block} />
-      ) : parked.isError ? (
+      ) : failedToLoad(parked) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(parked.error)} onRetry={() => parked.refetch()} />
         </View>

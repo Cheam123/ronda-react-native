@@ -69,6 +69,13 @@ export function formatShortDay(value: string | Date | null | undefined): string 
   return d ? `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}` : '';
 }
 
+/** What is wrong with a typed amount ("1,234.50" or "80" are fine); empty is fine, for optional fields. */
+export function amountProblem(value: string): string | undefined {
+  const plain = value.replace(/,/g, '').trim();
+  if (!plain) return undefined;
+  return /^\d+(\.\d{1,2})?$/.test(plain) ? undefined : 'Enter an amount like 1,234.50.';
+}
+
 /** "RM 1,234.00" */
 export function formatMoney(value: number | string | null | undefined, currency = 'RM'): string {
   const n = typeof value === 'string' ? Number(value.replace(/,/g, '')) : value ?? 0;

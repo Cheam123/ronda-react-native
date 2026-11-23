@@ -25,11 +25,12 @@ import { OutletFormScreen } from '../features/outlets/OutletFormScreen';
 import { OutletOrdersScreen } from '../features/outlets/OutletOrdersScreen';
 import { OutletScreen } from '../features/outlets/OutletScreen';
 import { OutletsScreen } from '../features/outlets/OutletsScreen';
-import { OutletSuggestedScreen } from '../features/outlets/OutletSuggestedScreen';
 import { OutletTasksScreen } from '../features/outlets/OutletTasksScreen';
 import { OutletVisitsScreen } from '../features/outlets/OutletVisitsScreen';
 import { PickOutletScreen } from '../features/outlets/PickOutletScreen';
 import { VisitBriefScreen } from '../features/outlets/VisitBriefScreen';
+import { DrinkIdeasScreen } from '../features/menu/DrinkIdeasScreen';
+import { ScanMenuScreen } from '../features/menu/ScanMenuScreen';
 import { LogVisitScreen } from '../features/record/LogVisitScreen';
 import { OrderSentScreen } from '../features/record/OrderSentScreen';
 import { RecordOrderScreen } from '../features/record/RecordOrderScreen';
@@ -155,11 +156,12 @@ export function RootNavigator() {
         <Stack.Screen name="RoundUp" component={RoundUpScreen} />
 
         <Stack.Screen name="Outlet" component={OutletScreen} />
-        <Stack.Screen name="OutletSuggested" component={OutletSuggestedScreen} />
         <Stack.Screen name="OutletVisits" component={OutletVisitsScreen} />
         <Stack.Screen name="OutletOrders" component={OutletOrdersScreen} />
         <Stack.Screen name="OutletTasks" component={OutletTasksScreen} />
         <Stack.Screen name="OutletDetails" component={OutletDetailsScreen} />
+        <Stack.Screen name="ScanMenu" component={ScanMenuScreen} />
+        <Stack.Screen name="DrinkIdeas" component={DrinkIdeasScreen} />
         <Stack.Screen name="OutletDocuments" component={OutletDocumentsScreen} />
         <Stack.Screen name="VisitBrief" component={VisitBriefScreen} />
         <Stack.Screen name="VisitReport" component={VisitReportScreen} />

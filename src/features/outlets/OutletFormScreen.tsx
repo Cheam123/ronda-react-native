@@ -9,7 +9,7 @@ import { FormSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { PhotoStrip } from '../../components/PhotoStrip';
 import { PressableScale } from '../../components/Pressable';
-import { DetailScreen } from '../../components/Screen';
+import { DetailScreen, useFieldScroll } from '../../components/Screen';
 import { SelectField } from '../../components/SelectField';
 import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
@@ -22,6 +22,12 @@ import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
 
 /** Add an outlet, or change one. The server calls it a lead. */
+/** Fields that can carry an error, top to bottom, so a failed save shows the first. */
+const FIELD_ORDER = ['business_name', 'name', 'seats', 'mobile', 'email', 'address', 'typical_drink_price'];
+
+/** A typical drink price as typed: digits and one decimal point, at most 2 decimals. */
+const priceText = (t: string) => t.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1').replace(/(\.\d{2})\d+$/, '$1');
+
 export function OutletFormScreen({ route, navigation }: RootScreenProps<'OutletForm'>) {
   const id = route.params?.id;
   const existing = useQuery({ queryKey: outletKeys.detail(id ?? 0), queryFn: () => fetchOutlet(id!), enabled: !!id });
@@ -55,11 +61,19 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
   const [size, setSize] = useState<string | null>(o?.size_band ?? null);
   const [seats, setSeats] = useState(o?.seats ? String(o.seats) : '');
   const [segment, setSegment] = useState<string | null>(o?.segment ?? null);
+  const initialHalal = o?.is_halal === true ? 'yes' : o?.is_halal === false ? 'no' : null;
+  const [halal, setHalal] = useState<string | null>(initialHalal);
+  const [mainCustomers, setMainCustomers] = useState<string[]>(o?.main_customers ?? []);
+  const [bestSellers, setBestSellers] = useState<string[]>(o?.best_selling_kinds ?? []);
+  const [goals, setGoals] = useState<string[]>(o?.improvement_goals ?? []);
+  const initialPrice = o?.typical_drink_price != null ? String(o.typical_drink_price) : '';
+  const [price, setPrice] = useState(initialPrice);
   const [customerId, setCustomerId] = useState(o?.customer_id ?? '');
   const [remark, setRemark] = useState(o?.remarks ?? '');
   const [stamp, setStamp] = useState<GpsStamp | null | undefined>(undefined);
   const [photos, setPhotos] = useState<LocalFile[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const scroll = useFieldScroll();
   // Anything changed from the outlet as it loaded (or from empty, for a new one).
   const changed =
     shop !== (o?.business_name ?? '') ||
@@ -71,6 +85,11 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
     remark !== (o?.remarks ?? '') ||
     customerId !== (o?.customer_id ?? '') ||
     seats !== (o?.seats ? String(o.seats) : '') ||
+    halal !== initialHalal ||
+    mainCustomers.join(',') !== (o?.main_customers ?? []).join(',') ||
+    bestSellers.join(',') !== (o?.best_selling_kinds ?? []).join(',') ||
+    goals.join(',') !== (o?.improvement_goals ?? []).join(',') ||
+    price !== initialPrice ||
     stamp !== undefined ||
     photos.length > 0;
   const allowLeave = useConfirmLeave(changed, { title: id ? 'Discard your changes?' : 'Discard this outlet?', keep: 'Keep editing' });
@@ -92,6 +111,11 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
         size_band: size,
         seats: seats ? Number(seats) : null,
         segment,
+        is_halal: halal === 'yes' ? true : halal === 'no' ? false : null,
+        main_customers: mainCustomers,
+        best_selling_kinds: bestSellers,
+        improvement_goals: goals,
+        typical_drink_price: price ? Number(price) : null,
         customer_id: customerId.trim() || null,
         remark: remark.trim() || null,
         // Only send a stamp when one was taken; leaving it out keeps the saved one.
@@ -111,6 +135,7 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
         const map: Record<string, string> = {};
         for (const [k, v] of Object.entries(e.fieldErrors)) map[k] = v[0];
         setErrors(map);
+        scroll.show(FIELD_ORDER.filter((k) => map[k]));
       }
       Alert.alert(id ? 'We could not save the outlet' : 'We could not add the outlet', errorMessage(e));
     },
@@ -121,9 +146,11 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
     if (!shop.trim() && !company.trim()) next.business_name = 'Enter the shop name.';
     if (!mobile.trim()) next.mobile = 'Enter a mobile number.';
     else if (mobile.replace(/\D/g, '').length < 8) next.mobile = 'Check the mobile number.';
+    if (price && !(Number(price) >= 1 && Number(price) <= 100)) next.typical_drink_price = 'Enter a price between RM 1 and RM 100.';
     setErrors(next);
     if (Object.keys(next).length) {
       haptic.error();
+      scroll.show(FIELD_ORDER.filter((k) => next[k]));
       return;
     }
     save.mutate();
@@ -145,6 +172,7 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
   return (
     <DetailScreen
       keyboard
+      fieldScroll={scroll}
       modalHeader={{ title: id ? 'Edit outlet' : 'Add an outlet', onCancel: () => navigation.goBack() }}
       bottomBar={<Button label={id ? 'Save changes' : 'Add outlet'} loading={save.isPending} style={styles.flex} onPress={submit} />}
     >
@@ -152,8 +180,12 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
         The outlet
       </Text>
       <Card padded style={styles.card}>
-        <TextField label="Shop name" value={shop} onChangeText={setShop} error={errors.business_name} placeholder="For example: Daily Grind SS2" />
-        <TextField label="Company" optional value={company} onChangeText={setCompany} error={errors.name} placeholder="The registered company name" />
+        <View {...scroll.anchor('business_name')}>
+          <TextField label="Shop name" value={shop} onChangeText={setShop} error={errors.business_name} placeholder="For example: Daily Grind SS2" />
+        </View>
+        <View {...scroll.anchor('name')}>
+          <TextField label="Company" optional value={company} onChangeText={setCompany} error={errors.name} placeholder="The registered company name" />
+        </View>
         <SelectField
           label="Type"
           optional
@@ -166,11 +198,22 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
           <View style={styles.flex}>
             <SelectField label="Size" optional value={size} onChange={setSize} options={(opts?.size_bands ?? []).map((o) => ({ value: String(o.value), label: o.label }))} />
           </View>
-          <View style={styles.flex}>
+          <View style={styles.flex} {...scroll.anchor('seats')}>
             <TextField label="Seats" optional value={seats} onChangeText={(t) => setSeats(t.replace(/\D/g, ''))} keyboardType="number-pad" error={errors.seats} />
           </View>
         </View>
         <SelectField label="Price level" optional value={segment} onChange={setSegment} options={(opts?.segments ?? []).map((o) => ({ value: String(o.value), label: o.label }))} />
+        <SelectField
+          label="Only stocks halal products?"
+          optional
+          value={halal}
+          onChange={setHalal}
+          options={[
+            { value: 'yes', label: 'Yes' },
+            { value: 'no', label: 'No' },
+          ]}
+          hint="Leave it empty if you don't know."
+        />
         <TextField label="Customer ID" optional mono value={customerId} onChangeText={setCustomerId} autoCapitalize="characters" hint="Leave empty for a prospect." />
       </Card>
 
@@ -178,15 +221,21 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
         Contact
       </Text>
       <Card padded style={styles.card}>
-        <TextField label="Mobile" value={mobile} onChangeText={setMobile} keyboardType="phone-pad" error={errors.mobile} placeholder="012 345 6789" maxLength={15} />
-        <TextField label="Email" optional value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
+        <View {...scroll.anchor('mobile')}>
+          <TextField label="Mobile" value={mobile} onChangeText={setMobile} keyboardType="phone-pad" error={errors.mobile} placeholder="012 345 6789" maxLength={15} />
+        </View>
+        <View {...scroll.anchor('email')}>
+          <TextField label="Email" optional value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
+        </View>
       </Card>
 
       <Text variant="label" color="ink2" style={styles.section} accessibilityRole="header">
         Where
       </Text>
       <Card padded style={styles.card}>
-        <TextField label="Address" optional value={address} onChangeText={setAddress} multiline error={errors.address} />
+        <View {...scroll.anchor('address')}>
+          <TextField label="Address" optional value={address} onChangeText={setAddress} multiline error={errors.address} />
+        </View>
         <View style={styles.row}>
           <View style={styles.flex}>
             <TextField label="Postcode" optional value={postcode} onChangeText={setPostcode} keyboardType="number-pad" />
@@ -225,6 +274,59 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
       </Card>
 
       <Text variant="label" color="ink2" style={styles.section} accessibilityRole="header">
+        What the outlet needs
+      </Text>
+      <Text variant="footnote" color="ink2" style={styles.sectionNote}>
+        What the owner tells you. Drink ideas use it. Leave anything you don’t know empty.
+      </Text>
+      <Card padded style={styles.card}>
+        <SelectField<string>
+          label="Main customers"
+          optional
+          multiple
+          value={mainCustomers}
+          onChange={(next) => setMainCustomers(next)}
+          options={(opts?.customer_groups ?? []).map((o) => ({ value: String(o.value), label: o.label }))}
+          hint="Who mostly buys here. Pick as many as apply."
+        />
+        <SelectField<string>
+          label="Their best-selling drinks"
+          optional
+          multiple
+          value={bestSellers}
+          onChange={(next) => setBestSellers(next)}
+          options={(opts?.drink_kinds ?? []).map((o) => ({ value: String(o.value), label: o.label }))}
+          hint="The kinds of drink that sell most here."
+        />
+        <SelectField<string>
+          label="What they want to improve"
+          optional
+          multiple
+          value={goals}
+          onChange={(next) => setGoals(next)}
+          options={(opts?.goals ?? []).map((o) => ({ value: String(o.value), label: o.label }))}
+          hint="Pick everything the owner mentions."
+        />
+        <View {...scroll.anchor('typical_drink_price')}>
+          <TextField
+            label="Typical drink price"
+            optional
+            value={price}
+            onChangeText={(t) => setPrice(priceText(t))}
+            keyboardType="decimal-pad"
+            error={errors.typical_drink_price}
+            hint="What a usual drink costs here."
+            leading={
+              <Text variant="body" color="ink2">
+                RM
+              </Text>
+            }
+            maxLength={6}
+          />
+        </View>
+      </Card>
+
+      <Text variant="label" color="ink2" style={styles.section} accessibilityRole="header">
         More
       </Text>
       <Card padded style={styles.card}>
@@ -247,6 +349,7 @@ function OutletFormBody({ id, initial: o, navigation }: { id?: number; initial: 
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   section: { marginTop: 22, marginBottom: 8, marginHorizontal: 20 },
+  sectionNote: { marginTop: -4, marginBottom: 10, marginHorizontal: 20 },
   card: { marginHorizontal: space.gutter, borderRadius: radius.card, gap: 16 },
   row: { flexDirection: 'row', gap: 12 },
   stamp: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: radius.inner, borderWidth: 1.5, borderStyle: 'dashed' },

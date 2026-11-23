@@ -25,10 +25,12 @@ interface TaskRowItemProps {
   showStatus?: boolean;
   /** A line under the row, e.g. "Mei Ling Tan checks it". */
   footnote?: string;
+  /** What a swipe does, offered to screen readers and switch access as actions on the row. */
+  actions?: { name: string; label: string; run: () => void }[];
 }
 
 /** One task in a list: the check, the title, where and when. */
-export function TaskRowItem({ task, onPress, onLongPress, checkable, checked = false, onCheck, last, showWho, showStatus, footnote }: TaskRowItemProps) {
+export function TaskRowItem({ task, onPress, onLongPress, checkable, checked = false, onCheck, last, showWho, showStatus, footnote, actions = [] }: TaskRowItemProps) {
   const colors = useColors();
   const reduced = useReducedMotion();
   const tone = colors.tones[toneFor(task.risk)];
@@ -57,6 +59,8 @@ export function TaskRowItem({ task, onPress, onLongPress, checkable, checked = f
         onLongPress={onLongPress}
         accessibilityRole="button"
         accessibilityLabel={`${task.title}, ${where}${who ? `, for ${who}` : ''}, ${showStatus ? statusLabel(task.status) : note}${unread ? `, ${unread} new messages` : ''}`}
+        accessibilityActions={actions.map((a) => ({ name: a.name, label: a.label }))}
+        onAccessibilityAction={(e) => actions.find((a) => a.name === e.nativeEvent.actionName)?.run()}
         style={({ pressed }) => [styles.link, pressed && { backgroundColor: colors.pressed }]}
       >
         <Text

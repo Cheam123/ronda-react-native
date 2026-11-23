@@ -4,12 +4,12 @@ import { Alert, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { assistantKeys, briefSections, fetchBrief, writeBrief } from '../../api/assistant';
 import { errorMessage } from '../../api/client';
+import { fetchDrinkIdeas, menuKeys } from '../../api/menu';
 import {
   fetchOutlet,
   fetchOutletMedia,
   fetchOutletOrders,
   fetchOutletVisits,
-  fetchRecommendations,
   outletKeys,
 } from '../../api/outlets';
 import { fetchTasks, taskKeys } from '../../api/tasks';
@@ -31,6 +31,7 @@ import { callNumber, messageNumber } from '../../lib/contact';
 import { haptic } from '../../lib/haptics';
 import { openDirections } from '../../lib/location';
 import { outletCompany, outletName } from '../../lib/outletCopy';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
@@ -48,9 +49,9 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
   const visits = useQuery({ queryKey: outletKeys.visits(id), queryFn: () => fetchOutletVisits(id) });
   const orders = useQuery({ queryKey: outletKeys.orders(id), queryFn: () => fetchOutletOrders(id) });
   const tasks = useQuery({ queryKey: taskKeys.list({ status: 0, lead_id: id }), queryFn: () => fetchTasks({ status: 0, lead_id: id }) });
-  const recs = useQuery({ queryKey: outletKeys.recommendations(id), queryFn: () => fetchRecommendations(id), staleTime: 10 * 60_000 });
   const media = useQuery({ queryKey: outletKeys.media(id), queryFn: () => fetchOutletMedia(id) });
   const brief = useQuery({ queryKey: assistantKeys.brief(id), queryFn: () => fetchBrief(id) });
+  const ideas = useQuery({ queryKey: menuKeys.ideas(id), queryFn: () => fetchDrinkIdeas(id) });
 
   const write = useMutation({
     mutationFn: () => writeBrief(id),
@@ -71,7 +72,7 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
       </DetailScreen>
     );
   }
-  if (outlet.isError || !outlet.data) {
+  if (failedToLoad(outlet) || !outlet.data) {
     return (
       <DetailScreen backLabel="Back">
         <View style={styles.pad}>
@@ -93,7 +94,6 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
   const lastOrder = orderList[0];
   const taskList = tasks.data?.tasks ?? [];
   const overdueTasks = taskList.filter((t) => t.risk === 'overdue').length;
-  const rec = recs.data;
   const details = [o.business_category, o.size_band_label?.toLowerCase(), o.seats ? `${o.seats} seats` : null, o.segment_label?.toLowerCase()].filter(Boolean).join(' · ');
   const files = (media.data?.media.length ?? 0) + (media.data?.documents.length ?? 0);
   const stampedAt = parseDate(o.location?.captured_at ?? null);
@@ -109,7 +109,7 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
           <MoreDots color={colors.body} />
         </IconButton>
       }
-      onRefresh={() => Promise.all([outlet.refetch(), visits.refetch(), orders.refetch(), tasks.refetch(), brief.refetch()])}
+      onRefresh={() => Promise.all([outlet.refetch(), visits.refetch(), orders.refetch(), tasks.refetch(), brief.refetch(), ideas.refetch()])}
       bottomBar={
         <>
           {abilities.record_order ? (
@@ -169,24 +169,14 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
             A short brief before you go in: who they are, what happened last time and what to raise today.
           </Text>
         )}
-        {rec?.explanation.opening_line ? (
-          <View style={[styles.opener, { backgroundColor: colors.scheme === 'dark' ? colors.raised : colors.ground }]}>
-            <Text variant="label" color="ink2">
-              You could open with
-            </Text>
-            <Text variant="serif" style={styles.openerText}>
-              “{rec.explanation.opening_line}”
-            </Text>
-          </View>
-        ) : null}
         <View style={styles.briefFoot}>
           <Text variant="footnote" color="muted" style={styles.flex}>
             {brief.data?.brief
-              ? brief.data.brief.source === 'bedrock'
-                ? 'Written by Claude (Amazon Bedrock) from this outlet’s visits, orders and tasks.'
+              ? brief.data.brief.source === 'claude'
+                ? 'Written by Claude from this outlet’s visits, orders and tasks.'
                 : 'Written from this outlet’s visits, orders and tasks. Claude is not set up yet.'
               : brief.data?.available
-                ? 'Claude (Amazon Bedrock) writes it from this outlet’s visits, orders and tasks.'
+                ? 'Claude writes it from this outlet’s visits, orders and tasks.'
                 : 'Written from this outlet’s visits, orders and tasks.'}
           </Text>
           {brief.data?.brief ? (
@@ -205,15 +195,16 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
         <SectionRow
           icon="trend"
           tone="suggest"
-          title="Suggested orders"
-          sub={
-            recs.isPending
-              ? 'Checking similar outlets…'
-              : rec && rec.items.length
-                ? `${plural(rec.items.length, 'product')}, about ${formatMoney(rec.estimated_monthly_value, rec.currency)} a month`
-                : 'None right now'
-          }
-          onPress={() => navigation.navigate('OutletSuggested', { id, name })}
+          title="Drink ideas"
+          sub={ideas.isPending ? ' ' : ideas.data?.ideas.length ? `${plural(ideas.data.ideas.length, 'idea')} to pitch` : 'No ideas yet'}
+          onPress={() => navigation.navigate('DrinkIdeas', { id, name })}
+        />
+        <SectionRow
+          icon="camera"
+          tone="suggest"
+          title="Scan menu"
+          sub="Photograph the drinks menu to sharpen the ideas"
+          onPress={() => navigation.navigate('ScanMenu', { id, name })}
         />
         <SectionRow
           icon="visits"
@@ -411,8 +402,6 @@ const styles = StyleSheet.create({
   bullet: { flexDirection: 'row', gap: 12 },
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 9 },
   bulletText: { fontSize: 17, lineHeight: 24 },
-  opener: { marginTop: 16, padding: 14, paddingHorizontal: 16, borderRadius: radius.inner, gap: 4 },
-  openerText: { fontSize: 21, lineHeight: 27 },
   briefFoot: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
   link: { minHeight: 48, justifyContent: 'center' },
   linkText: { fontSize: 15 },

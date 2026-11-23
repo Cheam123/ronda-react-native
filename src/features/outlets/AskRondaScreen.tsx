@@ -15,6 +15,7 @@ import { Segmented } from '../../components/Segmented';
 import { Text } from '../../components/Text';
 import { messageNumber } from '../../lib/contact';
 import { haptic } from '../../lib/haptics';
+import { failedToLoad } from '../../lib/query';
 import { RondaRing } from '../../motion/RondaRing';
 import { useReducedMotion } from '../../motion/useReducedMotion';
 import type { RootScreenProps } from '../../navigation/types';
@@ -27,13 +28,12 @@ type Entry =
   | { kind: 'answer'; text: string }
   | { kind: 'draft'; topic: Topic };
 
-type Topic = 'last_visit' | 'last_order' | 'suggested';
+type Topic = 'last_visit' | 'last_order';
 
 const STARTERS = ['What should I raise today?', 'What did they order last month?', 'Any open problems here?'];
 const TOPICS: { key: Topic; label: string }[] = [
   { key: 'last_visit', label: 'After the visit' },
   { key: 'last_order', label: 'After the order' },
-  { key: 'suggested', label: 'Suggested products' },
 ];
 
 /** Questions about one outlet, answered by Claude from that outlet's records. */
@@ -119,7 +119,7 @@ export function AskRondaScreen({ route, navigation }: RootScreenProps<'AskRonda'
               </Text>
               <View style={styles.answerFoot}>
                 <Text variant="footnote" color="muted" style={styles.flex}>
-                  From this outlet’s visits, orders and tasks · Claude (Amazon Bedrock)
+                  From this outlet’s visits, orders and tasks · Claude
                 </Text>
                 <PressableScale
                   onPress={() => {
@@ -253,7 +253,7 @@ function DraftCard({ outletId, mobile }: { outletId: number; mobile: string | nu
             Writing the message…
           </Text>
         </View>
-      ) : draft.isError ? (
+      ) : failedToLoad(draft) ? (
         <Text variant="caption" color="danger" style={styles.draftText}>
           {errorMessage(draft.error)}
         </Text>
@@ -263,8 +263,8 @@ function DraftCard({ outletId, mobile }: { outletId: number; mobile: string | nu
             {text}
           </Text>
           <Text variant="footnote" color="muted">
-            {draft.data?.source === 'bedrock'
-              ? 'Written by Claude (Amazon Bedrock) from this outlet’s records. Check it before you send.'
+            {draft.data?.source === 'claude'
+              ? 'Written by Claude from this outlet’s records. Check it before you send.'
               : 'Written from this outlet’s records. Check it before you send.'}
           </Text>
           <View style={styles.draftActions}>

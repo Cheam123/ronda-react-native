@@ -4,6 +4,12 @@
     "slug": "ronda",
     "scheme": "ronda",
     "version": "2.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/dd1be979-b237-4d61-a8f9-1b949cd50ea0"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -70,7 +76,8 @@
           "defaultChannel": "default"
         }
       ],
-      "./plugins/withBrandAccent"
+      "./plugins/withBrandAccent",
+      "expo-mlkit-ocr"
     ],
     "extra": {
       "eas": {

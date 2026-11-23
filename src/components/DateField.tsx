@@ -46,7 +46,7 @@ export function DateField({ label, value, onChange, mode = 'date', minimumDate, 
       <Pressable
         onPress={open}
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${value ? shown : 'not chosen'}`}
+        accessibilityLabel={`${label}, ${value ? shown : 'not chosen'}${error ? `, Error: ${error}` : ''}`}
         accessibilityHint="Opens a picker"
         style={({ pressed }) => [
           row ? styles.row : [styles.box, { borderColor: error ? colors.danger : colors.control, backgroundColor: colors.scheme === 'dark' ? colors.raised : colors.panel }],
@@ -74,7 +74,7 @@ export function DateField({ label, value, onChange, mode = 'date', minimumDate, 
         />
       ) : null}
       {error ? (
-        <Text variant="caption" color="danger">
+        <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
           {error}
         </Text>
       ) : null}

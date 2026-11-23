@@ -15,6 +15,7 @@ import { TextField } from '../../components/TextField';
 import { haptic } from '../../lib/haptics';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
+import { TAP } from '../../theme/tokens';
 
 /**
  * The corner ring sits this far above the safe-area top, so its dot floats
@@ -31,7 +32,10 @@ export function SignInScreen({ navigation }: RootScreenProps<'SignIn'>) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  // What the server said (wrong password, account off) sits over the button; a missing field is marked on the field.
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const isDark = colors.scheme === 'dark';
   const y = useSharedValue(0);
@@ -41,9 +45,16 @@ export function SignInScreen({ navigation }: RootScreenProps<'SignIn'>) {
   const coverStyle = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [0, 24], [0, 1], Extrapolation.CLAMP) }));
 
   const submit = async () => {
-    if (!email.trim() || !password) {
-      setError('Enter your email and password.');
+    const missing = {
+      email: !email.trim() ? 'Enter your email.' : !email.includes('@') ? 'Enter your full email, like you@company.com.' : undefined,
+      password: !password ? 'Enter your password.' : undefined,
+    };
+    if (missing.email || missing.password) {
+      setFieldErrors(missing);
+      setError(null);
       haptic.error();
+      // Put the cursor where the fix goes.
+      (missing.email ? emailRef : passwordRef).current?.focus();
       return;
     }
     setBusy(true);
@@ -113,11 +124,14 @@ export function SignInScreen({ navigation }: RootScreenProps<'SignIn'>) {
 
         <View style={styles.form}>
           <TextField
+            ref={emailRef}
             label="Email"
             value={email}
+            error={fieldErrors.email}
             onChangeText={(t) => {
               setEmail(t);
               setError(null);
+              setFieldErrors(({ email: _, ...rest }) => rest);
             }}
             placeholder="you@company.com"
             autoCapitalize="none"
@@ -132,9 +146,11 @@ export function SignInScreen({ navigation }: RootScreenProps<'SignIn'>) {
             ref={passwordRef}
             label="Password"
             value={password}
+            error={fieldErrors.password}
             onChangeText={(t) => {
               setPassword(t);
               setError(null);
+              setFieldErrors(({ password: _, ...rest }) => rest);
             }}
             placeholder="Your password"
             secureTextEntry={!showPassword}
@@ -207,7 +223,7 @@ const styles = StyleSheet.create({
   lead: { marginTop: 10, maxWidth: 320 },
   form: { marginTop: 32, gap: 18 },
   big: { fontSize: 17 },
-  eye: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -8 },
+  eye: { width: TAP, height: TAP, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
   forgotRow: { alignItems: 'flex-end', marginTop: -10 },
   forgot: { minHeight: 48, justifyContent: 'center' },
   forgotText: { fontSize: 15 },

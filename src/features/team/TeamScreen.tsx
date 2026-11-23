@@ -15,6 +15,7 @@ import { Text } from '../../components/Text';
 import { firstName, formatDayMonth, formatLongDay, formatTime, greeting, isSameDay, keepTogether, parseDate, plural } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
+import { failedToLoad } from '../../lib/query';
 import { PulseDot } from '../../motion/PulseDot';
 import type { ManagerTabScreenProps } from '../../navigation/types';
 import type { ToneName } from '../../theme/tokens';
@@ -78,7 +79,7 @@ export function TeamScreen({ navigation }: ManagerTabScreenProps<'Team'>) {
     <TabScreen title={`${greeting(now)}, ${keepTogether(firstName(user?.name))}`} compactTitle="Team" header={header} onRefresh={() => team.refetch()}>
       {team.isPending ? (
         <HomeSkeleton variant="team" label="Loading your team" />
-      ) : team.isError || !s ? (
+      ) : failedToLoad(team) || !s ? (
         <View style={styles.section}>
           <LoadError message={errorMessage(team.error)} onRetry={() => team.refetch()} />
         </View>
@@ -109,7 +110,11 @@ export function TeamScreen({ navigation }: ManagerTabScreenProps<'Team'>) {
                       {t.label}
                     </Text>
                   </View>
-                  <Text variant="number">{t.count}</Text>
+                  {/* The chevron says this tile opens a list, unlike Today's tiles, which filter in place. */}
+                  <View style={styles.tileFoot}>
+                    <Text variant="number">{t.count}</Text>
+                    <Icon name="chevronRight" size={20} color={colors.chevron} strokeWidth={2.2} />
+                  </View>
                 </PressableScale>
               );
             })}
@@ -190,8 +195,8 @@ export function RoundUpCard({ digest, onRead }: { digest: Digest; onRead: () => 
 
 /** Who wrote the Round-Up, and from what. */
 export function attribution(source: string): string {
-  return source === 'bedrock'
-    ? 'Written by Claude (Amazon Bedrock) from the team’s tasks, visits and orders.'
+  return source === 'claude'
+    ? 'Written by Claude from the team’s tasks, visits and orders.'
     : 'Written from a template, from the team’s tasks, visits and orders. Claude was not used.';
 }
 
@@ -243,6 +248,7 @@ const styles = StyleSheet.create({
   tileRow: { minHeight: 72, borderRadius: radius.tile, borderWidth: 1, paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   tileLabel: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
   tileLabelLarge: { fontSize: 22, lineHeight: 28 },
+  tileFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   roundUp: { marginTop: 32, marginHorizontal: space.gutter, borderRadius: radius.card, paddingVertical: 18, paddingHorizontal: 18 },
   roundHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },

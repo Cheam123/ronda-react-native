@@ -15,6 +15,7 @@ import type { SheetHandle } from '../../components/Sheet';
 import { Text } from '../../components/Text';
 import { haptic } from '../../lib/haptics';
 import { groupFor, type GroupKey } from '../../lib/taskCopy';
+import { failedToLoad } from '../../lib/query';
 import { useReducedMotion } from '../../motion/useReducedMotion';
 import { useTabBarSpace } from '../../navigation/TabBar';
 import type { RepTabScreenProps } from '../../navigation/types';
@@ -24,7 +25,7 @@ import { useUndo } from '../../undo/UndoProvider';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
 import { TaskPreview } from './TaskPreview';
 import { TaskRowItem } from './TaskRowItem';
-import { doneKey, useTaskActions } from './useTaskActions';
+import { doneKey, parkKey, useTaskActions } from './useTaskActions';
 
 const GROUPS: { key: GroupKey; title: string }[] = [
   { key: 'overdue', title: 'Overdue' },
@@ -57,7 +58,7 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const openTasks = useMemo(
-    () => (open.data?.tasks ?? []).filter((t) => !pending.has(doneKey(t.id))),
+    () => (open.data?.tasks ?? []).filter((t) => !pending.has(doneKey(t.id)) && !pending.has(parkKey(t.id))),
     [open.data, pending],
   );
   const groups = useMemo(() => {
@@ -110,13 +111,13 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
   // One flat list for the FlatList: a title before each group, then its rows.
   const doneTasks = done.data?.tasks ?? [];
   const items: ListItem[] = [];
-  if (view === 'open' && !open.isPending && !open.isError) {
+  if (view === 'open' && !open.isPending && !failedToLoad(open)) {
     for (const g of groups) {
       items.push({ kind: 'title', key: `t-${g.key}`, title: g.title, critical: g.key === 'overdue' });
       g.rows.forEach((t, i) => items.push({ kind: 'task', key: `r-${t.id}`, task: t, first: i === 0, last: i === g.rows.length - 1 }));
     }
   }
-  if (view === 'done' && !done.isPending && !done.isError && doneTasks.length) {
+  if (view === 'done' && !done.isPending && !failedToLoad(done) && doneTasks.length) {
     doneTasks.forEach((t, i) => items.push({ kind: 'task', key: `d-${t.id}`, task: t, first: i === 0, last: i === doneTasks.length - 1, done: true }));
   }
 
@@ -143,17 +144,26 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
         </CardSlice>
       );
     }
+    const finishable = t.can_done_task || t.can_accept_task;
+    // The swipe's actions, for anyone who cannot swipe.
+    const rowActions = [
+      finishable && !checked.has(t.id) ? { name: 'done', label: 'Mark as done', run: () => check(t) } : null,
+      t.can_kiv_task ? { name: 'kiv', label: 'Keep in view', run: () => keepInView(t.id) } : null,
+      t.can_hold_task ? { name: 'hold', label: 'Put on hold', run: () => hold(t.id) } : null,
+      { name: 'preview', label: 'Show quick actions', run: () => lift(t) },
+    ].filter((a): a is { name: string; label: string; run: () => void } => !!a);
     return (
       <CardSlice first={item.first} last={item.last}>
-        <SwipeableTaskRow task={t} onDone={() => check(t)} onKeepInView={safely(() => keepInView(t.id))} onHold={safely(() => hold(t.id))}>
+        <SwipeableTaskRow task={t} onDone={() => check(t)} onKeepInView={() => keepInView(t.id)} onHold={() => hold(t.id)}>
           <TaskRowItem
             task={t}
             last={item.last}
-            checkable={t.can_done_task || t.can_accept_task}
+            checkable={finishable}
             checked={checked.has(t.id)}
             onCheck={() => check(t)}
             onPress={() => goTask(t)}
             onLongPress={() => lift(t)}
+            actions={rowActions}
           />
         </SwipeableTaskRow>
       </CardSlice>
@@ -212,7 +222,7 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
       {view === 'open' ? (
         open.isPending ? (
           <ListSkeleton label="Loading your tasks" rows={5} shape={rowShapes.task} caption="captionStrong" />
-        ) : open.isError ? (
+        ) : failedToLoad(open) ? (
           <View style={styles.block}>
             <LoadError message={errorMessage(open.error)} onRetry={() => open.refetch()} />
           </View>
@@ -223,7 +233,7 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
         ) : null
       ) : done.isPending ? (
         <ListSkeleton label="Loading done tasks" rows={4} shape={rowShapes.taskStatus} caption="captionStrong" />
-      ) : done.isError ? (
+      ) : failedToLoad(done) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(done.error)} onRetry={() => done.refetch()} />
         </View>

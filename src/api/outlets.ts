@@ -31,8 +31,6 @@ export interface OutletRow {
   customer_id: string | null;
   kind: 'customer' | 'prospect';
   last_visit_at: string | null;
-  suggested_count: number;
-  suggested_value: number;
   open_tasks: number;
   overdue: number;
   at_risk: number;
@@ -43,11 +41,23 @@ export interface OutletRow {
   seats: number | null;
   segment: string | null;
   segment_label: string | null;
+  /** Missing from a server older than the halal question. */
+  is_halal?: boolean | null;
+  /** Customer group keys the rep picked. */
+  main_customers?: string[];
+  /** Drink kind keys that sell best there. Missing from an older server. */
+  best_selling_kinds?: string[];
+  /** What the owner wants to improve, as goal keys. Missing from an older server. */
+  improvement_goals?: string[];
+  /** What a usual drink costs there, in RM. Null when not stated. */
+  typical_drink_price?: number | null;
+  /** The same needs with readable names, for showing only. Missing from an older server. */
+  needs?: OutletNeeds;
   location: GpsStamp | null;
   created_at: string;
 }
 
-export interface OutletDetail extends Omit<OutletRow, 'kind' | 'last_visit_at' | 'suggested_count' | 'suggested_value' | 'open_tasks' | 'overdue' | 'at_risk' | 'due_today' | 'next_due_at'> {
+export interface OutletDetail extends Omit<OutletRow, 'kind' | 'last_visit_at' | 'open_tasks' | 'overdue' | 'at_risk' | 'due_today' | 'next_due_at'> {
   state_id: number | null;
   city_id: number | null;
   attachments: { id: number; name: string; file_path: string; file_type: string; size: number }[];
@@ -55,14 +65,13 @@ export interface OutletDetail extends Omit<OutletRow, 'kind' | 'last_visit_at' |
 
 export interface OutletListResult {
   leads: OutletRow[];
-  counts: { all: number; customer: number; prospect: number; suggested: number };
+  counts: { all: number; customer: number; prospect: number };
   pagination: { total: number; per_page: number; current_page: number; last_page: number };
 }
 
 export interface OutletListParams extends Query {
   search?: string;
   kind?: 'customer' | 'prospect';
-  suggested?: 1;
   area?: number;
   sort?: 'open_work';
   per_page?: number;
@@ -106,33 +115,13 @@ export interface Order {
   lines: OrderLine[];
 }
 
-export interface RecommendationItem {
-  product_id: number;
-  sku: string;
-  name: string;
-  category: string | null;
-  unit: string;
-  unit_price: number;
-  /** 'gap': they do not buy it yet; otherwise they buy less than similar outlets. */
-  status: 'gap' | 'top_up' | string;
-  support: number;
-  buyers: number;
-  neighbors_used: number;
-  recommended_qty: number;
-  current_qty: number;
-  est_monthly_value: number;
-}
+/** What the rep did with a drink idea. */
+export type FeedbackStatus = 'pitched' | 'accepted' | 'declined';
 
-export interface Recommendations {
-  lead_id: number;
-  status: 'ready' | 'insufficient_data';
-  computed_at: string | null;
-  currency: string;
-  similar_outlets: number;
-  gap_count: number;
-  estimated_monthly_value: number;
-  items: RecommendationItem[];
-  explanation: { why: string | null; opening_line: string | null; source: 'bedrock' | 'template' | null };
+/** Each drink idea's newest answer at an outlet, and why it was declined, by drink id. */
+export interface RecommendationFeedback {
+  drink_feedback: Record<string, FeedbackStatus>;
+  drink_reasons: Record<string, string>;
 }
 
 export interface OutletTaskRow {
@@ -158,6 +147,20 @@ export interface OutletFilterOptions {
   cities: (FilterOption & { state_id?: number })[];
   size_bands: FilterOption[];
   segments: FilterOption[];
+  /** The 8 customer groups, for "Main customers". Missing from an older server. */
+  customer_groups?: FilterOption[];
+  /** The 8 kinds of drink, for "Their best-selling drinks". Missing from an older server. */
+  drink_kinds?: FilterOption[];
+  /** What an outlet can want to improve. Missing from an older server. */
+  goals?: FilterOption[];
+}
+
+/** What the outlet needs, with readable names. */
+export interface OutletNeeds {
+  main_customers: string[];
+  best_selling_kinds: string[];
+  improvement_goals: string[];
+  typical_drink_price: number | null;
 }
 
 export const outletKeys = {
@@ -167,7 +170,6 @@ export const outletKeys = {
   visits: (id: number) => ['outlets', 'visits', id] as const,
   orders: (id: number) => ['outlets', 'orders', id] as const,
   tasks: (id: number) => ['outlets', 'tasks', id] as const,
-  recommendations: (id: number) => ['outlets', 'recommendations', id] as const,
   media: (id: number) => ['outlets', 'media', id] as const,
   options: ['outlets', 'options'] as const,
 };
@@ -197,8 +199,19 @@ export async function fetchOutletTasks(leadId: number): Promise<OutletTaskRow[]>
   return body.data?.tasks ?? [];
 }
 
-export async function fetchRecommendations(leadId: number): Promise<Recommendations> {
-  const body = await api.get<{ data: Recommendations }>('leads/recommendations', { lead_id: leadId }, 120);
+/** Records what the rep did with a drink idea. 'cleared' takes the last answer back; a reason only goes with a decline. */
+export async function saveRecommendationFeedback(
+  leadId: number,
+  recipeId: number,
+  status: FeedbackStatus | 'cleared',
+  reason?: string,
+): Promise<RecommendationFeedback> {
+  const body = await api.post<{ data: RecommendationFeedback }>('leads/recommendations/feedback', {
+    lead_id: leadId,
+    recipe_id: recipeId,
+    status,
+    ...(reason ? { reason } : {}),
+  });
   return body.data;
 }
 
@@ -227,6 +240,16 @@ export interface OutletInput {
   size_band?: string | null;
   seats?: number | null;
   segment?: string | null;
+  /** True: only stocks halal products. Null: not stated. Left out: keep what is saved. */
+  is_halal?: boolean | null;
+  /** Customer group keys. An empty list clears the answer. */
+  main_customers?: string[];
+  /** Drink kind keys. An empty list clears the answer. */
+  best_selling_kinds?: string[];
+  /** Goal keys. An empty list clears the answer. */
+  improvement_goals?: string[];
+  /** RM. Null clears the answer. */
+  typical_drink_price?: number | null;
   remark?: string | null;
   customer_id?: string | null;
   gps?: GpsStamp | null;
@@ -241,6 +264,11 @@ export async function saveOutlet(input: OutletInput): Promise<{ id: number }> {
     receive_date: new Date().toISOString().slice(0, 10),
   };
   if (gps !== undefined) fields.gps = gps ? JSON.stringify(gps) : '';
+  // An empty list would send nothing, which the server reads as "keep the saved answer": send a blank to clear it.
+  for (const key of ['main_customers', 'best_selling_kinds', 'improvement_goals'] as const) {
+    const list = rest[key];
+    if (Array.isArray(list) && list.length === 0) fields[key] = null;
+  }
   const body = await api.post<{ data: { lead: { id: number } } }>(
     input.id ? 'leads/edit' : 'leads/create',
     toFormData({ ...fields, ...(files?.length ? { file: files } : {}) }),
@@ -268,7 +296,7 @@ export async function fetchProducts(): Promise<{ currency: string; categories: s
   return body.data;
 }
 
-export async function recordOrder(leadId: number, lines: { product_id: number; quantity: number }[], remark?: string | null): Promise<Order> {
+export async function recordOrder(leadId: number, lines: { product_id: number; quantity: number; suggested?: boolean }[], remark?: string | null): Promise<Order> {
   const body = await api.post<{ data: { order: Order } }>('leads/orders/create', { lead_id: leadId, lines, remark: remark || null });
   return body.data.order;
 }

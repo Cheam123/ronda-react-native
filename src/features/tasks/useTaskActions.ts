@@ -20,7 +20,7 @@ interface DoneInput {
 /** Status changes for the rep's task screens, with Undo where the board shows it. */
 export function useTaskActions() {
   const queryClient = useQueryClient();
-  const { schedule, undo, pending, notify } = useUndo();
+  const { schedule, undo, pending } = useUndo();
 
   const refresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: taskKeys.all });
@@ -60,25 +60,30 @@ export function useTaskActions() {
     [refresh],
   );
 
-  const keepInView = useCallback(
-    async (id: number, remark?: string | null) => {
-      await taskActions.keepInView(id, remark);
+  /**
+   * Keep in view or put on hold, after the Undo window like Done: a rep cannot
+   * start a parked task again from the app, so a slip on the swipe panel
+   * needs its way back here.
+   */
+  const park = useCallback(
+    (id: number, how: 'kiv' | 'hold', callbacks: { onUndo?: () => void; onDone?: () => void } = {}) => {
       haptic.selection();
-      notify('Kept in view. It moves out of your open tasks.');
-      refresh();
+      schedule({
+        key: parkKey(id),
+        message: how === 'kiv' ? 'Kept in view. It moves out of your open tasks.' : 'Put on hold. It moves out of your open tasks.',
+        run: () => (how === 'kiv' ? taskActions.keepInView(id) : taskActions.hold(id)),
+        onUndo: callbacks.onUndo,
+        onDone: () => {
+          refresh();
+          callbacks.onDone?.();
+        },
+        onError: () => refresh(),
+      });
     },
-    [notify, refresh],
+    [schedule, refresh],
   );
-
-  const hold = useCallback(
-    async (id: number, remark?: string | null) => {
-      await taskActions.hold(id, remark);
-      haptic.selection();
-      notify('Put on hold.');
-      refresh();
-    },
-    [notify, refresh],
-  );
+  const keepInView = useCallback((id: number, callbacks?: { onUndo?: () => void; onDone?: () => void }) => park(id, 'kiv', callbacks), [park]);
+  const hold = useCallback((id: number, callbacks?: { onUndo?: () => void; onDone?: () => void }) => park(id, 'hold', callbacks), [park]);
 
   /** Verify (checker), after the Undo window. */
   const verify = useCallback(
@@ -124,3 +129,4 @@ export function useTaskActions() {
 }
 
 export const doneKey = (id: number) => `task-done-${id}`;
+export const parkKey = (id: number) => `task-park-${id}`;

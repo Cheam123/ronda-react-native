@@ -10,6 +10,7 @@ import { fileUrl, RemotePhotos } from '../../components/PhotoStrip';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatDate } from '../../lib/format';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { space } from '../../theme/tokens';
@@ -29,7 +30,7 @@ export function OutletDocumentsScreen({ route }: RootScreenProps<'OutletDocument
       </Text>
       {media.isPending ? (
         <DocumentsSkeleton />
-      ) : media.isError ? (
+      ) : failedToLoad(media) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(media.error)} onRetry={() => media.refetch()} />
         </View>

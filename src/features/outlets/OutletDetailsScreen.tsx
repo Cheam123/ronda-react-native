@@ -9,8 +9,9 @@ import { LoadError } from '../../components/EmptyState';
 import { DetailsSkeleton } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
-import { formatDate } from '../../lib/format';
+import { formatDate, formatMoney } from '../../lib/format';
 import { outletName } from '../../lib/outletCopy';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
@@ -34,6 +35,15 @@ export function OutletDetailsScreen({ route, navigation }: RootScreenProps<'Outl
             { label: 'Size', value: o.size_band_label },
             { label: 'Seats', value: o.seats ? String(o.seats) : null },
             { label: 'Price level', value: o.segment_label },
+          ],
+        },
+        {
+          title: 'What the outlet needs',
+          rows: [
+            { label: 'Main customers', value: o.needs?.main_customers.join(', ') },
+            { label: 'Best-selling drinks', value: o.needs?.best_selling_kinds.join(', ') },
+            { label: 'Wants to', value: o.needs?.improvement_goals.join(', ') },
+            { label: 'Typical drink price', value: o.needs?.typical_drink_price != null ? formatMoney(o.needs.typical_drink_price) : null },
           ],
         },
         {
@@ -81,7 +91,7 @@ export function OutletDetailsScreen({ route, navigation }: RootScreenProps<'Outl
       ) : null}
       {outlet.isPending ? (
         <DetailsSkeleton />
-      ) : outlet.isError || !o ? (
+      ) : failedToLoad(outlet) || !o ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(outlet.error)} onRetry={() => outlet.refetch()} />
         </View>

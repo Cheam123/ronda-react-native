@@ -15,10 +15,11 @@ import { PressableScale } from '../../components/Pressable';
 import { TabScreen } from '../../components/Screen';
 import { PlaceAndNote } from '../../components/PlaceAndNote';
 import { Text } from '../../components/Text';
-import { firstName, formatLongDay, formatMoney, formatTime, greeting, keepTogether, plural } from '../../lib/format';
+import { firstName, formatLongDay, formatTime, greeting, keepTogether, plural } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { dueNote, toneFor } from '../../lib/taskCopy';
 import { useNow } from '../../lib/useNow';
+import { failedToLoad } from '../../lib/query';
 import { riseIn } from '../../motion/curves';
 import { PulseDot } from '../../motion/PulseDot';
 import { useReducedMotion } from '../../motion/useReducedMotion';
@@ -171,7 +172,7 @@ export function TodayScreen({ navigation }: RepTabScreenProps<'Today'>) {
     >
       {home.isPending ? (
         <HomeSkeleton variant="today" label="Loading your day" />
-      ) : home.isError ? (
+      ) : failedToLoad(home) ? (
         <View style={styles.section}>
           <LoadError message={errorMessage(home.error)} onRetry={() => home.refetch()} />
         </View>
@@ -256,32 +257,8 @@ export function TodayScreen({ navigation }: RepTabScreenProps<'Today'>) {
             </View>
           </LayoutAnimationConfig>
 
-          <AlsoToday today={today!} onOpenTask={(id, title) => navigation.navigate('Task', { id, title })} onOpenOutlet={(id, name) => navigation.navigate('Outlet', { id, name })} />
+          <AlsoToday today={today!} large={large} onOpenTask={(id, title) => navigation.navigate('Task', { id, title })} onOpenOutlet={(id, name) => navigation.navigate('Outlet', { id, name })} />
 
-          {today?.suggestions && today.suggestions.total > 0 ? (
-            <PressableScale
-              onPress={() => navigation.navigate('Outlets', { filter: 'sugg' })}
-              scaleTo={0.98}
-              accessibilityRole="link"
-              style={[styles.suggest, { backgroundColor: colors.panel, borderColor: colors.cardRing }]}
-            >
-              <Text variant="captionStrong" color={colors.tones.suggest.ink}>
-                Suggested orders
-              </Text>
-              <Text variant="section" style={styles.suggestTitle}>
-                {today.suggestions.total === 1 ? '1 of your outlets could order more' : `${today.suggestions.total} of your outlets could order more`}
-              </Text>
-              <Text variant="subhead" color="ink2" style={styles.suggestBody}>
-                About {formatMoney(today.suggestions.estimated_monthly_value, today.suggestions.currency)} a month, from what similar outlets buy.
-              </Text>
-              <View style={styles.seeThem}>
-                <Text variant="captionStrong" color="link" style={styles.showAllText}>
-                  See them
-                </Text>
-                <Icon name="chevronRight" size={16} color={colors.link} strokeWidth={2.4} />
-              </View>
-            </PressableScale>
-          ) : null}
         </>
       )}
     </TabScreen>
@@ -313,10 +290,13 @@ function NeedRow({ item, large, last, onPress }: { item: NeedItem; large: boolea
 
 function AlsoToday({
   today,
+  large,
   onOpenTask,
   onOpenOutlet,
 }: {
   today: DayAtAGlance;
+  /** Very large text: the time goes above the name instead of in a column beside it. */
+  large: boolean;
   onOpenTask: (id: number, title: string) => void;
   onOpenOutlet: (id: number, name: string) => void;
 }) {
@@ -334,10 +314,17 @@ function AlsoToday({
           const index = i + 1;
           return (
             <ListRow key={`a-${a.id}`} onPress={() => onOpenTask(a.id, a.title)} divider={index < total} style={styles.alsoRow}>
-              <Text variant="bodyStrong" style={styles.time}>
-                {a.appointment_at ? formatTime(a.appointment_at) : ''}
-              </Text>
+              {large ? null : (
+                <Text variant="bodyStrong" style={styles.time}>
+                  {a.appointment_at ? formatTime(a.appointment_at) : ''}
+                </Text>
+              )}
               <View style={styles.flex}>
+                {large && a.appointment_at ? (
+                  <Text variant="bodyStrong" style={styles.time}>
+                    {formatTime(a.appointment_at)}
+                  </Text>
+                ) : null}
                 <Text variant="bodyStrong">{a.lead_name ?? a.title}</Text>
                 <Text variant="caption" color="ink2">
                   Appointment · {lowerFirst(a.title)}
@@ -355,10 +342,17 @@ function AlsoToday({
               divider={index < total}
               style={styles.alsoRow}
             >
-              <Text variant="bodyStrong" color="ink2" style={styles.time}>
-                Follow-up
-              </Text>
+              {large ? null : (
+                <Text variant="bodyStrong" color="ink2" style={styles.time}>
+                  Follow-up
+                </Text>
+              )}
               <View style={styles.flex}>
+                {large ? (
+                  <Text variant="bodyStrong" color="ink2" style={styles.time}>
+                    Follow-up
+                  </Text>
+                ) : null}
                 <Text variant="bodyStrong">{v.outlet ?? 'Outlet'}</Text>
                 {v.plan ? (
                   <Text variant="caption" color="ink2">
@@ -402,9 +396,6 @@ const styles = StyleSheet.create({
   needTile: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   pulse: { position: 'absolute', top: -3, right: -3, width: 12, height: 12, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   alsoRow: { paddingVertical: 15, paddingHorizontal: 18 },
-  time: { width: 76, fontSize: 15, lineHeight: 20 },
-  suggest: { marginTop: 36, marginHorizontal: space.gutter, borderRadius: radius.card, borderWidth: 1, padding: 20 },
-  suggestTitle: { marginTop: 6, fontSize: 20, lineHeight: 27 },
-  suggestBody: { marginTop: 4, lineHeight: 22 },
-  seeThem: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12, minHeight: 24 },
+  // At least the column the board draws; larger text widens it instead of breaking "10:30 AM" in two.
+  time: { minWidth: 76, fontSize: 15, lineHeight: 20 },
 });

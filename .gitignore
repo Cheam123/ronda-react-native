@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+/brag-output
+/brag-output-2026-10-22-093154
+/docs
+.claude
+.agents

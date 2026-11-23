@@ -12,6 +12,7 @@ import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { relativeDay } from '../../lib/format';
 import { isMyTurn, recordLook, recordNote } from '../../lib/formCopy';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 
@@ -37,7 +38,7 @@ export function RecordsScreen({ navigation }: RootScreenProps<'Records'>) {
     <DetailScreen
       onRefresh={() => records.refetch()}
       list={{
-        data: records.isPending || records.isError ? [] : rows,
+        data: records.isPending || failedToLoad(records) ? [] : rows,
         keyExtractor: (r) => String(r.id),
         renderItem: (r, i) => (
           <CardSlice first={i === 0} last={i === rows.length - 1} style={i === 0 && styles.firstSlice}>
@@ -66,7 +67,7 @@ export function RecordsScreen({ navigation }: RootScreenProps<'Records'>) {
 
       {records.isPending ? (
         <ListSkeleton label="Loading records" shape={rowShapes.record} style={styles.firstSlice} />
-      ) : records.isError ? (
+      ) : failedToLoad(records) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(records.error)} onRetry={() => records.refetch()} />
         </View>

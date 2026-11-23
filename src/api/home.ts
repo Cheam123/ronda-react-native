@@ -35,20 +35,6 @@ export interface FormStep {
   submitted_at: string | null;
 }
 
-export interface SuggestionsSummary {
-  outlets: {
-    lead_id: number;
-    name: string | null;
-    products: string[];
-    product_count: number;
-    gap_count: number;
-    estimated_monthly_value: number;
-  }[];
-  total: number;
-  estimated_monthly_value: number;
-  currency: string;
-}
-
 export interface DayAtAGlance {
   date: string;
   counts: {
@@ -66,7 +52,6 @@ export interface DayAtAGlance {
   form_steps: FormStep[];
   overdue: DayTask[];
   at_risk: DayTask[];
-  suggestions: SuggestionsSummary | null;
 }
 
 export interface HomeSummary {

@@ -1,13 +1,16 @@
 import { useNavigation } from '@react-navigation/native';
-import { useState, type ReactElement, type ReactNode } from 'react';
-import { Platform, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useMemo, useRef, useState, type ReactElement, type ReactNode, type RefObject } from 'react';
+import { Platform, RefreshControl, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { KeyboardAwareScrollView, type KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import Animated, { Extrapolation, interpolate, LinearTransition, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { errorMessage } from '../api/client';
 import { haptic } from '../lib/haptics';
+import { useReducedMotion } from '../motion/useReducedMotion';
 import { useTabBarSpace } from '../navigation/TabBar';
 import { usePreviousTitle } from '../navigation/usePreviousTitle';
 import { useColors } from '../theme/ThemeProvider';
+import { useUndo } from '../undo/UndoProvider';
 import { Icon } from './Icon';
 import { PressableScale } from './Pressable';
 import { Text } from './Text';
@@ -17,16 +20,23 @@ const COLLAPSE_AT = 44;
 /**
  * Pull to refresh. The ring answers a pull only and stays until that fetch
  * settles; a refetch the app starts on its own (coming back to the app, after
- * a save) stays quiet.
+ * a save) stays quiet. A pull that fails says why, and what was on screen
+ * stays there.
  */
 function usePullToRefresh(onRefresh?: () => Promise<unknown>) {
   const [pulled, setPulled] = useState(false);
+  const { notify } = useUndo();
   const pull = () => {
     if (!onRefresh) return;
     haptic.light();
     setPulled(true);
     onRefresh()
-      .catch(() => undefined)
+      .then((result) => {
+        // refetch() resolves even when it fails; the error is on its result (one, or several from Promise.all).
+        const failed = (Array.isArray(result) ? result : [result]).find((r) => !!r && typeof r === 'object' && 'isError' in r && r.isError) as { error: unknown } | undefined;
+        if (failed) notify(errorMessage(failed.error), 'error');
+      })
+      .catch((e) => notify(errorMessage(e), 'error'))
       .finally(() => setPulled(false));
   };
   return { pulled, pull };
@@ -175,6 +185,55 @@ interface DetailScreenProps<T> {
   modalHeader?: { title: string; onCancel: () => void; cancelLabel?: string; action?: { label: string; onPress: () => void; disabled?: boolean } };
   /** Rows drawn as they come on screen; children then sit above them. */
   list?: ScreenList<T>;
+  /** From useFieldScroll: lets a form bring the field to fix into view (keyboard forms only). */
+  fieldScroll?: FieldScroll;
+}
+
+export interface FieldScroll {
+  ref: RefObject<KeyboardAwareScrollViewRef | null>;
+  onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /** Spread on the View around a field, named by the key its error uses. Not collapsable, so Android keeps a view to measure. */
+  anchor: (key: string) => { ref: (node: View | null) => void; collapsable: false };
+  /** Scroll so the first of these keys that has a field sits near the top. */
+  show: (keys: string[]) => void;
+}
+
+/**
+ * A form that fails its checks scrolls to the first field to fix, as FillForm
+ * does a step at a time, so a rep who taps Submit at the bottom sees why.
+ * Fields sit inside cards, so their place is measured on screen.
+ */
+export function useFieldScroll(): FieldScroll {
+  const reduced = useReducedMotion();
+  const ref = useRef<KeyboardAwareScrollViewRef>(null);
+  const offset = useRef(0);
+  const nodes = useRef(new Map<string, View>());
+  return useMemo(
+    () => ({
+      ref,
+      onScroll: (e) => {
+        offset.current = e.nativeEvent.contentOffset.y;
+      },
+      anchor: (key) => ({
+        ref: (node) => {
+          if (node) nodes.current.set(key, node);
+          else nodes.current.delete(key);
+        },
+        collapsable: false,
+      }),
+      show: (keys) => {
+        const node = keys.map((k) => nodes.current.get(k)).find(Boolean);
+        const scroller = ref.current as unknown as (View & KeyboardAwareScrollViewRef) | null;
+        if (!node || !scroller) return;
+        scroller.measureInWindow((_x, top) => {
+          node.measureInWindow((_fx, y) => {
+            scroller.scrollTo({ y: Math.max(0, offset.current + y - top - 24), animated: !reduced });
+          });
+        });
+      },
+    }),
+    [reduced],
+  );
 }
 
 /** A pushed screen: back link, no tab bar, actions at the bottom. */
@@ -189,6 +248,7 @@ export function DetailScreen<T = never>({
   contentStyle,
   modalHeader,
   list,
+  fieldScroll,
 }: DetailScreenProps<T>) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -214,6 +274,7 @@ export function DetailScreen<T = never>({
             onPress={modalHeader.action.disabled ? undefined : modalHeader.action.onPress}
             accessibilityLabel={modalHeader.action.label}
             accessibilityState={{ disabled: !!modalHeader.action.disabled }}
+            style={styles.modalAction}
           >
             <Text variant="bodyStrong" color="link" style={[styles.link, modalHeader.action.disabled && { opacity: 0.45 }]}>
               {modalHeader.action.label}
@@ -272,7 +333,13 @@ export function DetailScreen<T = never>({
           contentContainerStyle={[{ paddingBottom: bottomPad }, contentStyle]}
         />
       ) : keyboard ? (
-        <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" contentContainerStyle={[{ paddingBottom: bottomPad }, contentStyle]}>
+        <KeyboardAwareScrollView
+          ref={fieldScroll?.ref}
+          onScroll={fieldScroll?.onScroll}
+          bottomOffset={24}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[{ paddingBottom: bottomPad }, contentStyle]}
+        >
           {body}
         </KeyboardAwareScrollView>
       ) : (
@@ -330,6 +397,8 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 6, minHeight: 52 },
   modalSide: { flex: 1, minHeight: 48, justifyContent: 'center', paddingHorizontal: 12 },
   modalRight: { alignItems: 'flex-end' },
+  // The whole side is the target, as Cancel's is: 48 tall, not just the word.
+  modalAction: { minHeight: 48, minWidth: 48, justifyContent: 'center', alignItems: 'flex-end' },
   modalTitle: { flex: 2, fontSize: 17 },
   link: { fontSize: 17, lineHeight: 22 },
   bottomBar: {

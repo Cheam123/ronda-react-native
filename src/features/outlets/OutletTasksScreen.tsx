@@ -9,6 +9,7 @@ import { EmptyState, LoadError } from '../../components/EmptyState';
 import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { TaskRowItem } from '../tasks/TaskRowItem';
 import { space } from '../../theme/tokens';
@@ -39,7 +40,7 @@ export function OutletTasksScreen({ route, navigation }: RootScreenProps<'Outlet
       </Text>
       {open.isPending ? (
         <ListSkeleton label="Loading tasks" shape={rowShapes.taskPlain} caption="captionStrong" captionStyle={styles.group} />
-      ) : open.isError ? (
+      ) : failedToLoad(open) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(open.error)} onRetry={() => open.refetch()} />
         </View>

@@ -10,6 +10,7 @@ import { PersonSkeleton } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatDayMonth, formatMoney, formatShortDay, plural } from '../../lib/format';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
@@ -26,7 +27,7 @@ export function TeamActivityScreen({ navigation }: RootScreenProps<'TeamActivity
       </DetailScreen>
     );
   }
-  if (team.isError || !team.data) {
+  if (failedToLoad(team) || !team.data) {
     return (
       <DetailScreen backLabel="Team">
         <LoadError message={errorMessage(team.error)} onRetry={() => team.refetch()} />

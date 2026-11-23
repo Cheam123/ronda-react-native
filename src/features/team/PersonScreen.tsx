@@ -19,6 +19,7 @@ import { callNumber, messageNumber } from '../../lib/contact';
 import { firstName, formatMoney, formatShortDay, plural } from '../../lib/format';
 import { friendlyDateTime } from '../../lib/taskCopy';
 import { parseStampText } from '../../lib/location';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
@@ -41,7 +42,7 @@ export function PersonScreen({ route, navigation }: RootScreenProps<'Person'>) {
       </DetailScreen>
     );
   }
-  if (view.isError || !view.data) {
+  if (failedToLoad(view) || !view.data) {
     return (
       <DetailScreen backLabel="Team">
         <LoadError message={errorMessage(view.error)} onRetry={() => view.refetch()} />

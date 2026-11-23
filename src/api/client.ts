@@ -74,7 +74,13 @@ interface RequestOptions {
   timeout?: number;
 }
 
+/**
+ * Say what went wrong in a way the rep can act on: no signal is theirs to
+ * fix, a server fault is not (so it does not send them to check their phone).
+ */
 const GENERIC = 'Something went wrong. Check your connection and try again.';
+const OFFLINE = 'We could not reach Ronda. Check that you have mobile data or Wi-Fi, then try again.';
+const SERVER = 'Ronda is having a problem on our side. Your work is not lost. Try again in a few minutes.';
 
 export async function request<T = Record<string, unknown>>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', query, body, timeout = 30 } = options;
@@ -102,7 +108,7 @@ export async function request<T = Record<string, unknown>>(path: string, options
     });
   } catch (e) {
     const aborted = (e as Error)?.name === 'AbortError';
-    throw new ApiError(aborted ? 'This is taking too long. Check your connection and try again.' : GENERIC, 0);
+    throw new ApiError(aborted ? 'This is taking too long. Check your connection and try again.' : OFFLINE, 0);
   } finally {
     clearTimeout(timer);
   }
@@ -117,6 +123,13 @@ export async function request<T = Record<string, unknown>>(path: string, options
   if (response.status === 401) {
     onUnauthorized?.();
     throw new ApiError('Please sign in again.', 401);
+  }
+
+  // A server fault's own message is for developers ("SQLSTATE…", "Server Error"), never for the rep.
+  // 503 is the exception: Ask Ronda uses it on purpose, with copy written for the rep.
+  const meant = response.status === 503 && typeof json?.message === 'string' && json.message;
+  if (response.status >= 500 && !meant) {
+    throw new ApiError(SERVER, response.status);
   }
 
   if (!response.ok || json?.status === 'error') {

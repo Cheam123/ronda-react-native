@@ -15,7 +15,8 @@ const FULL_SWIPE = 140;
 /**
  * A task row you can swipe. Right: a short swipe shows Done, a full swipe
  * does it. Left: Keep in view and On hold, when the task allows them.
- * Screen readers get the same actions through the row's own buttons.
+ * Screen readers and switch access get the same actions as the row's
+ * accessibility actions (TaskRowItem `actions`), and Done as its check.
  */
 export function SwipeableTaskRow({
   task,

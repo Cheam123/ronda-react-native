@@ -15,6 +15,7 @@ import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatDate, formatDayMonth, parseDate, plural } from '../../lib/format';
 import { parseStampText } from '../../lib/location';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
@@ -64,7 +65,7 @@ export function OutletVisitsScreen({ route, navigation }: RootScreenProps<'Outle
 
       {visits.isPending ? (
         <ListSkeleton label="Loading visits" shape={rowShapes.entry} style={styles.block} />
-      ) : visits.isError ? (
+      ) : failedToLoad(visits) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(visits.error)} onRetry={() => visits.refetch()} />
         </View>

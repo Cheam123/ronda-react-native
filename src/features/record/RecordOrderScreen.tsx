@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeOutUp, SlideInUp } from 'react-native-reanimated';
 import { GLIDE } from '../../motion/curves';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,6 @@ import {
   fetchOutlet,
   fetchOutletOrders,
   fetchProducts,
-  fetchRecommendations,
   outletKeys,
   productKeys,
   recordOrder,
@@ -40,13 +39,13 @@ interface Line {
   product: Product;
   qty: number;
   suggested: boolean;
-  /** What similar outlets buy a month, for the "Use 8 kg" tip. */
+  /** The suggested quantity, for the "Use 8 kg" tip. */
   tip: number | null;
 }
 
 /** Record an order: repeat the last one, add the suggested products, or pick products. */
 export function RecordOrderScreen({ route, navigation }: RootScreenProps<'RecordOrder'>) {
-  const { outletId, productIds, fromVisit } = route.params ?? {};
+  const { outletId, suggested: suggestedLines, fromVisit } = route.params ?? {};
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -59,27 +58,29 @@ export function RecordOrderScreen({ route, navigation }: RootScreenProps<'Record
   const outlet = useQuery({ queryKey: outletKeys.detail(outletId ?? 0), queryFn: () => fetchOutlet(outletId!), enabled: !!outletId });
   const products = useQuery({ queryKey: productKeys.all, queryFn: fetchProducts, staleTime: 10 * 60_000 });
   const orders = useQuery({ queryKey: outletKeys.orders(outletId ?? 0), queryFn: () => fetchOutletOrders(outletId!), enabled: !!outletId });
-  const recs = useQuery({ queryKey: outletKeys.recommendations(outletId ?? 0), queryFn: () => fetchRecommendations(outletId!), enabled: !!outletId, staleTime: 10 * 60_000 });
 
   const lastOrder = (orders.data ?? []).find((o) => o.status !== 'cancelled');
-  const recByProduct = useMemo(() => new Map((recs.data?.items ?? []).map((i) => [i.product_id, i])), [recs.data]);
+  // The products a suggestion asked for, and how much of each.
+  const recByProduct = useMemo(
+    () => new Map<number, { recommended_qty: number }>((suggestedLines ?? []).map((s) => [s.productId, { recommended_qty: s.quantity }])),
+    [suggestedLines],
+  );
   const currency = products.data?.currency ?? 'RM';
 
-  // Products picked on Suggested orders arrive pre-filled at the suggested quantity.
+  // Products from a suggestion arrive pre-filled at the suggested quantity.
   useEffect(() => {
-    if (seeded.current || !products.data || !productIds?.length || !recs.data) return;
+    if (seeded.current || !products.data || !suggestedLines?.length) return;
     seeded.current = true;
     const byId = new Map(products.data.products.map((p) => [p.id, p]));
     setLines(
-      productIds
-        .map((pid) => {
-          const p = byId.get(pid);
-          const rec = recByProduct.get(pid);
-          return p ? { product: p, qty: Math.max(1, Math.round(rec?.recommended_qty ?? 1)), suggested: !!rec, tip: rec?.recommended_qty ?? null } : null;
+      suggestedLines
+        .map((s): Line | null => {
+          const p = byId.get(s.productId);
+          return p ? { product: p, qty: Math.max(1, Math.round(s.quantity)), suggested: true, tip: s.quantity } : null;
         })
         .filter((l): l is Line => !!l),
     );
-  }, [products.data, productIds, recs.data, recByProduct]);
+  }, [products.data, suggestedLines]);
 
   useEffect(() => {
     if (!showToast) return;
@@ -125,7 +126,7 @@ export function RecordOrderScreen({ route, navigation }: RootScreenProps<'Record
   const allowLeave = useConfirmLeave(active.length > 0 || !!remark.trim(), { title: 'Discard this order?', keep: 'Keep editing' });
 
   const send = useMutation({
-    mutationFn: () => recordOrder(outletId!, active.map((l) => ({ product_id: l.product.id, quantity: l.qty })), remark.trim() || null),
+    mutationFn: () => recordOrder(outletId!, active.map((l) => ({ product_id: l.product.id, quantity: l.qty, suggested: l.suggested })), remark.trim() || null),
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: outletKeys.all });
       queryClient.invalidateQueries({ queryKey: homeKey });
@@ -177,7 +178,7 @@ export function RecordOrderScreen({ route, navigation }: RootScreenProps<'Record
               </Text>
             </View>
             {!outletId ? (
-              <PressableScale onPress={() => navigation.navigate('PickOutlet', { purpose: 'order' })} accessibilityRole="button" style={styles.small}>
+              <PressableScale onPress={() => navigation.navigate('PickOutlet', { purpose: 'order' })} accessibilityRole="button" accessibilityLabel="Choose an outlet" style={styles.small}>
                 <Text variant="captionStrong" color="link" style={styles.linkText}>
                   Choose
                 </Text>
@@ -204,8 +205,9 @@ export function RecordOrderScreen({ route, navigation }: RootScreenProps<'Record
           <Text variant="label" color="ink2" accessibilityRole="header">
             Products
           </Text>
+          {/* "product", as the total under the list says: "line" is the office's word, not the rep's. */}
           <Text variant="label" color="ink2" style={styles.light}>
-            {plural(active.length, 'line')}
+            {plural(active.length, 'product')}
           </Text>
         </View>
         <Card style={styles.linesCard}>
@@ -237,7 +239,8 @@ export function RecordOrderScreen({ route, navigation }: RootScreenProps<'Record
               {formatMoney(total, currency)}
             </Text>
           </View>
-          <Button label="Send order" loading={send.isPending} onPress={confirmSend} />
+          {/* The label says what a tap does: with no outlet yet, it opens the outlet list instead of sending. */}
+          <Button label={outletId ? 'Send order' : 'Choose the outlet'} loading={send.isPending} onPress={confirmSend} />
         </View>
       </BottomBar>
 
@@ -280,9 +283,7 @@ function OrderLineRow({ line, currency, onQty }: { line: Line; currency: string;
             <PressableScale onPress={() => onQty(line.qty - 1)} accessibilityLabel={line.qty <= 1 ? `Remove ${p.name}` : `One less ${p.name}`} style={styles.step} hitSlop={4}>
               <Icon name={line.qty <= 1 ? 'trash' : 'minus'} size={18} color={colors.ink} strokeWidth={2.4} />
             </PressableScale>
-            <Text variant="captionStrong" align="center" style={styles.qty}>
-              {quantityLabel(line.qty, unitLabel)}
-            </Text>
+            <QtyField qty={line.qty} unit={unitLabel} name={p.name} onQty={onQty} />
             <PressableScale onPress={() => onQty(line.qty + 1)} accessibilityLabel={`One more ${p.name}`} style={styles.step} hitSlop={4}>
               <Icon name="plus" size={18} color={colors.ink} strokeWidth={2.4} />
             </PressableScale>
@@ -295,7 +296,7 @@ function OrderLineRow({ line, currency, onQty }: { line: Line; currency: string;
       {line.tip && line.qty < line.tip ? (
         <View style={[styles.tip, { backgroundColor: colors.brandTint }]}>
           <Text variant="footnote" color={colors.brandInk} style={styles.flex}>
-            Similar outlets buy {line.tip} {p.unit} a month.
+            The drink idea suggests {line.tip} {p.unit} a month.
           </Text>
           <PressableScale onPress={() => onQty(line.tip!)} accessibilityRole="button" style={[styles.tipButton, { backgroundColor: colors.panel }]}>
             <Text variant="label" color={colors.brandInk}>
@@ -308,6 +309,62 @@ function OrderLineRow({ line, currency, onQty }: { line: Line; currency: string;
   );
 }
 
+/**
+ * The amount between − and +. Tap it to type a number, so 48 cans is one
+ * entry, not 47 taps. Empty or not a number keeps the old amount; 0 takes
+ * the product off, as − does.
+ */
+function QtyField({ qty, unit, name, onQty }: { qty: number; unit: string; name: string; onQty: (q: number) => void }) {
+  const colors = useColors();
+  const [draft, setDraft] = useState<string | null>(null);
+  const label = quantityLabel(qty, unit);
+
+  if (draft === null) {
+    return (
+      <Pressable
+        onPress={() => setDraft(String(qty))}
+        accessibilityRole="button"
+        accessibilityLabel={`${label} of ${name}`}
+        accessibilityHint="Type a quantity"
+        hitSlop={2}
+        style={styles.qtyTap}
+      >
+        <Text variant="captionStrong" align="center" style={styles.qty}>
+          {label}
+        </Text>
+      </Pressable>
+    );
+  }
+
+  const done = () => {
+    const n = Number(draft.replace(',', '.'));
+    if (draft.trim() && Number.isFinite(n) && n >= 0 && n !== qty) onQty(n);
+    setDraft(null);
+  };
+  const typed = Number(draft.replace(',', '.'));
+  return (
+    <View style={[styles.qtyTap, styles.qtyEditing]}>
+      <TextInput
+        autoFocus
+        selectTextOnFocus
+        value={draft}
+        onChangeText={(t) => setDraft(t.replace(/[^\d.,]/g, ''))}
+        // Done on the keyboard blurs a one-line field, so this one handler covers both.
+        onBlur={done}
+        keyboardType="decimal-pad"
+        returnKeyType="done"
+        maxLength={7}
+        accessibilityLabel={`Quantity of ${name}`}
+        selectionColor={colors.brand}
+        style={[styles.qtyInput, { color: colors.ink }]}
+      />
+      {/* The unit stays in view while typing, in the form the number needs. */}
+      <Text variant="captionStrong" style={styles.qtyUnit}>
+        {quantityLabel(Number.isFinite(typed) ? typed : qty, unit).replace(/^\S+\s/, '')}
+      </Text>
+    </View>
+  );
+}
 
 const ProductPicker = forwardRef<SheetHandle, { products: Product[]; loading: boolean; suggestedIds: Set<number>; onPick: (p: Product) => void; currency: string }>(
   function ProductPicker({ products, loading, suggestedIds, onPick, currency }, ref) {
@@ -373,6 +430,11 @@ const styles = StyleSheet.create({
   step: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   // Wide enough for "12 bottles" or "24 litre", so the steppers in the list line up.
   qty: { minWidth: 74, fontSize: 15 },
+  // As tall as the − and + targets, so the amount is as easy to hit.
+  qtyTap: { minHeight: 44, justifyContent: 'center' },
+  qtyEditing: { minWidth: 74, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  qtyInput: { minWidth: 24, minHeight: 44, padding: 0, includeFontPadding: false, textAlign: 'center', fontFamily: fonts.semibold, fontSize: 15 },
+  qtyUnit: { fontSize: 15 },
   lineTotal: { fontFamily: fonts.semibold },
   tip: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingLeft: 12, paddingRight: 8, borderRadius: 12 },
   tipButton: { minHeight: 36, paddingHorizontal: 12, borderRadius: 9, justifyContent: 'center' },

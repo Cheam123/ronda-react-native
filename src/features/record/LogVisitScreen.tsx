@@ -17,11 +17,11 @@ import { DateField } from '../../components/DateField';
 import { PhotoStrip } from '../../components/PhotoStrip';
 import { PressableScale } from '../../components/Pressable';
 import { StampButton, StampedCard } from '../../components/StampCard';
-import { DetailScreen } from '../../components/Screen';
+import { DetailScreen, useFieldScroll } from '../../components/Screen';
 import { SwitchRow } from '../../components/Switch';
 import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
-import { formatTime } from '../../lib/format';
+import { amountProblem, formatTime } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { distanceMeters, stampLocation, stampText } from '../../lib/location';
 import { outletName } from '../../lib/outletCopy';
@@ -54,6 +54,7 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
   const [nextVisit, setNextVisit] = useState<Date>(() => new Date(Date.now() + 7 * 86_400_000));
   const [plan, setPlan] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const scroll = useFieldScroll();
   const allowLeave = useConfirmLeave(
     !!(what.trim() || problem.trim() || advice.trim() || supportNeeded.trim() || sales.trim() || invoice.trim() || plan.trim() || photos.length || stamp),
     { title: 'Discard this visit?', keep: 'Keep editing' },
@@ -115,9 +116,13 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
     if (!what.trim()) next.what = 'Write what happened on this visit.';
     if (!plan.trim()) next.plan = 'Add a plan for the next visit.';
     if (support && !supportNeeded.trim()) next.support = 'Say what support they need.';
+    const salesError = taskId ? amountProblem(sales) : undefined;
+    if (salesError) next.sales = salesError;
     setErrors(next);
     if (Object.keys(next).length) {
       haptic.error();
+      // In the order they are on screen.
+      scroll.show(['outlet', 'what', 'support', 'sales', 'plan'].filter((k) => next[k]));
       return false;
     }
     return true;
@@ -138,6 +143,7 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
   return (
     <DetailScreen
       keyboard
+      fieldScroll={scroll}
       modalHeader={{ title: 'Log a visit', onCancel: () => navigation.goBack() }}
       bottomBar={<Button label="Submit visit" loading={submit.isPending} style={styles.flex} onPress={confirmSubmit} />}
     >
@@ -151,7 +157,7 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
       ) : null}
 
       <Card style={styles.block}>
-        <View style={styles.outletRow}>
+        <View style={styles.outletRow} {...scroll.anchor('outlet')}>
           {o ? <Avatar name={outletName(o)} size={40} shape="tile" /> : <View style={[styles.emptyTile, { backgroundColor: colors.divider }]}>
               <Icon name="outlets" size={22} color={colors.ink2} />
             </View>}
@@ -168,7 +174,12 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
             )}
           </View>
           {taskId ? null : (
-            <PressableScale onPress={() => navigation.navigate('PickOutlet', { purpose: 'visit' })} accessibilityRole="button" style={styles.change}>
+            <PressableScale
+              onPress={() => navigation.navigate('PickOutlet', { purpose: 'visit' })}
+              accessibilityRole="button"
+              accessibilityLabel={outletId ? 'Change the outlet' : 'Choose an outlet'}
+              style={styles.change}
+            >
               <Text variant="captionStrong" color="link" style={styles.changeText}>
                 {outletId ? 'Change' : 'Choose'}
               </Text>
@@ -176,7 +187,7 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
           )}
         </View>
         {errors.outlet ? (
-          <Text variant="caption" color="danger" style={styles.inlineError}>
+          <Text variant="caption" color="danger" style={styles.inlineError} accessibilityLiveRegion="polite">
             {errors.outlet}
           </Text>
         ) : null}
@@ -201,12 +212,14 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
         The visit
       </Text>
       <Card padded style={styles.formCard}>
-        <TextField label="What happened" value={what} onChangeText={setWhat} multiline error={errors.what} placeholder="Who you met and what you talked about" />
+        <View {...scroll.anchor('what')}>
+          <TextField label="What happened" value={what} onChangeText={setWhat} multiline error={errors.what} placeholder="Who you met and what you talked about" />
+        </View>
         <TextField label="Problem" optional value={problem} onChangeText={setProblem} placeholder="Anything that went wrong" />
         <TextField label="Advice or opportunity" optional value={advice} onChangeText={setAdvice} placeholder="A chance to sell more, or a tip" />
         <SwitchRow label="They need support" hint="Your manager sees it in Review." value={support} onChange={setSupport} />
         {support ? (
-          <Animated.View entering={FadeIn.duration(200)}>
+          <Animated.View entering={FadeIn.duration(200)} {...scroll.anchor('support')}>
             <TextField label="What support?" value={supportNeeded} onChangeText={setSupportNeeded} error={errors.support} placeholder="For example: check the grinder" />
           </Animated.View>
         ) : null}
@@ -218,11 +231,12 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
             Sales
           </Text>
           <Card padded style={[styles.formCard, styles.salesRow]}>
-            <View style={styles.flex}>
+            <View style={styles.flex} {...scroll.anchor('sales')}>
               <TextField
                 label="Sales amount"
                 value={sales}
                 onChangeText={setSales}
+                error={errors.sales}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 leading={
@@ -255,7 +269,7 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
       <Card style={styles.formCardFlat}>
         <DateField row label="Next visit" value={nextVisit} onChange={setNextVisit} minimumDate={new Date()} />
         <View style={[styles.divider, { backgroundColor: colors.divider }]} />
-        <View style={styles.planWrap}>
+        <View style={styles.planWrap} {...scroll.anchor('plan')}>
           <TextField label="Plan" value={plan} onChangeText={setPlan} error={errors.plan} placeholder="For example: bring oat milk" />
         </View>
       </Card>

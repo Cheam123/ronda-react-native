@@ -10,6 +10,7 @@ import { Icon } from '../../components/Icon';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { space } from '../../theme/tokens';
@@ -70,7 +71,7 @@ export function TaskSearchScreen({ navigation }: RootScreenProps<'TaskSearch'>) 
         </Text>
       ) : results.isPending ? (
         <ListSkeleton label="Searching" rows={3} shape={rowShapes.taskStatus} />
-      ) : results.isError ? (
+      ) : failedToLoad(results) ? (
         <LoadError message={errorMessage(results.error)} onRetry={() => results.refetch()} />
       ) : (results.data ?? []).length === 0 ? (
         <EmptyState icon="search" title={`No tasks match "${query}"`} body="Check the spelling, or try the outlet's name." />

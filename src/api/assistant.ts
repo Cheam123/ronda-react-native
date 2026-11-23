@@ -3,7 +3,7 @@ import { api } from './client';
 /** A visit brief written by Claude, or from the template when Claude is off. */
 export interface VisitBrief {
   content: string;
-  source: 'bedrock' | 'template';
+  source: 'claude' | 'template';
   fallback: 'unavailable' | 'not_configured' | null;
   stale: boolean;
   generated_at: string;
@@ -15,16 +15,8 @@ export interface ChatTurn {
   content: string;
 }
 
-/** "How to pitch" for one product, keyed by SKU. */
-export interface Pitch {
-  pitch: string;
-  objection: string | null;
-  reply: string | null;
-}
-
 export const assistantKeys = {
   brief: (id: number) => ['assistant', 'brief', id] as const,
-  pitches: (id: number) => ['assistant', 'pitches', id] as const,
 };
 
 /** Claude can take a while: two minutes before giving up. */
@@ -47,20 +39,10 @@ export async function askRonda(leadId: number, messages: ChatTurn[]): Promise<st
 
 export async function draftFollowUp(
   leadId: number,
-  input: { language: 'en' | 'ms'; topic: 'last_visit' | 'last_order' | 'suggested'; note?: string | null },
-): Promise<{ text: string; source: 'bedrock' | 'template' }> {
-  const body = await api.post<{ data: { text: string; source: 'bedrock' | 'template' } }>(`leads/${leadId}/assistant/follow-up`, input, SLOW);
+  input: { language: 'en' | 'ms'; topic: 'last_visit' | 'last_order'; note?: string | null },
+): Promise<{ text: string; source: 'claude' | 'template' }> {
+  const body = await api.post<{ data: { text: string; source: 'claude' | 'template' } }>(`leads/${leadId}/assistant/follow-up`, input, SLOW);
   return body.data;
-}
-
-export async function fetchPitches(leadId: number): Promise<{ pitches: Record<string, Pitch>; source: 'bedrock' | 'template' | null }> {
-  const body = await api.post<{ data: { pitches: Record<string, Pitch> | Pitch[]; source: 'bedrock' | 'template' | null } }>(
-    `leads/${leadId}/assistant/pitches`,
-    undefined,
-    SLOW,
-  );
-  const raw = body.data.pitches;
-  return { pitches: Array.isArray(raw) ? {} : raw ?? {}, source: body.data.source };
 }
 
 /**

@@ -20,6 +20,7 @@ import type { SheetHandle } from '../../components/Sheet';
 import { Text } from '../../components/Text';
 import { haptic } from '../../lib/haptics';
 import { kindLabel, outletName, outletTags, visitedLabel } from '../../lib/outletCopy';
+import { failedToLoad } from '../../lib/query';
 import { useReducedMotion } from '../../motion/useReducedMotion';
 import type { OutletsFilter, RepTabParamList, RootStackParamList } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
@@ -37,7 +38,7 @@ export function OutletsScreen() {
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
 
-  // Today's suggestions card opens this tab on the Suggestions chip.
+  // Another screen can open this tab on a chosen chip.
   const wanted = route.params?.filter;
   useFocusEffect(
     useCallback(() => {
@@ -56,11 +57,12 @@ export function OutletsScreen() {
   const params: OutletListParams = {
     ...(search ? { search } : {}),
     ...(filter === 'customer' || filter === 'prospect' ? { kind: filter } : {}),
-    ...(filter === 'sugg' ? { suggested: 1 as const } : {}),
   };
   const list = useQuery({ queryKey: outletKeys.list(params), queryFn: () => fetchOutlets(params), placeholderData: (prev) => prev });
   const counts = list.data?.counts;
   const rows = list.data?.leads ?? [];
+  // The last results stay up while new ones load (or while the search waits for typing to stop): say so.
+  const finding = text.trim() !== search || (list.isFetching && list.isPlaceholderData);
 
   const open = (o: OutletRow) => navigation.navigate('Outlet', { id: o.id, name: outletName(o) });
   const [preview, setPreview] = useState<OutletRow | null>(null);
@@ -83,7 +85,7 @@ export function OutletsScreen() {
       }
       onRefresh={() => list.refetch()}
       list={{
-        data: list.isPending || list.isError ? [] : rows,
+        data: list.isPending || failedToLoad(list) ? [] : rows,
         keyExtractor: (o) => String(o.id),
         renderItem: (o, i) => (
           <CardSlice first={i === 0} last={i === rows.length - 1}>
@@ -112,14 +114,13 @@ export function OutletsScreen() {
             { key: 'all', label: 'All', count: counts?.all },
             { key: 'customer', label: 'Customers', count: counts?.customer },
             { key: 'prospect', label: 'Prospects', count: counts?.prospect },
-            { key: 'sugg', label: 'Suggestions', count: counts?.suggested },
           ]}
         />
       </View>
 
       {list.isPending ? (
         <ListSkeleton label="Loading outlets" rows={5} shape={rowShapes.outlet} caption="captionStrong" captionStyle={styles.caption} />
-      ) : list.isError ? (
+      ) : failedToLoad(list) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(list.error)} onRetry={() => list.refetch()} />
         </View>
@@ -127,20 +128,18 @@ export function OutletsScreen() {
         <View style={styles.block}>
           <EmptyState
             icon="outlets"
-            title={search ? `No outlets match "${search}"` : filter === 'sugg' ? 'No suggestions right now' : 'No outlets yet'}
+            title={search ? `No outlets match "${search}"` : 'No outlets yet'}
             body={
               search
                 ? 'Check the spelling, or search by mobile number.'
-                : filter === 'sugg'
-                  ? 'We need more information to give you suggestions. Order history and outlet details from similar outlets help us learn.'
-                  : 'Outlets you add or are given show up here.'
+                : 'Outlets you add or are given show up here.'
             }
           />
         </View>
       ) : (
         <Animated.View entering={reduced ? undefined : FadeIn.duration(260)}>
-          <Text variant="captionStrong" color="ink2" style={styles.caption}>
-            Open work first
+          <Text variant="captionStrong" color="ink2" style={styles.caption} accessibilityLiveRegion="polite">
+            {finding ? 'Finding outlets…' : 'Open work first'}
           </Text>
         </Animated.View>
       )}

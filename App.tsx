@@ -27,6 +27,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { isApiError } from './src/api/client';
 import { AuthProvider, useAuth } from './src/auth/AuthProvider';
 import { AnimatedSplash } from './src/features/auth/AnimatedSplash';
+import { OtaUpdates } from './src/navigation/OtaUpdates';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ThemeProvider, useColors } from './src/theme/ThemeProvider';
 import { UndoProvider } from './src/undo/UndoProvider';
@@ -113,6 +114,7 @@ function Root({ fontsReady }: { fontsReady: boolean }) {
             <RootNavigator />
           </NavigationContainer>
           <PushRouting navigationReady={navReady} />
+          <OtaUpdates canAsk={splashDone && status === 'signedIn'} />
         </UndoProvider>
       ) : (
         <View style={[styles.fill, { backgroundColor: colors.ground }]} />

@@ -7,6 +7,7 @@ import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { formatMoney } from '../../lib/format';
+import { failedToLoad } from '../../lib/query';
 import { OrderCard } from '../outlets/OutletOrdersScreen';
 import { space } from '../../theme/tokens';
 
@@ -28,7 +29,7 @@ export function MyOrdersScreen() {
       ) : null}
       {orders.isPending ? (
         <ListSkeleton label="Loading orders" shape={rowShapes.entry} style={styles.block} />
-      ) : orders.isError ? (
+      ) : failedToLoad(orders) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(orders.error)} onRetry={() => orders.refetch()} />
         </View>

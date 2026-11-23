@@ -40,6 +40,7 @@ import { buildSteps, displayValue, formNames, isField } from '../../lib/forms/sc
 import type { FieldType } from '../../lib/forms/types';
 import { recordLook, recordTrail, type StatusLook, type TrailStep } from '../../lib/formCopy';
 import { haptic } from '../../lib/haptics';
+import { failedToLoad } from '../../lib/query';
 import { Moving } from '../../motion/Moving';
 import { useReducedMotion } from '../../motion/useReducedMotion';
 import type { RootScreenProps } from '../../navigation/types';
@@ -125,7 +126,7 @@ export function RecordScreen({ route, navigation }: RootScreenProps<'Record'>) {
     },
   });
 
-  if (record.isError || entry.isError) {
+  if (failedToLoad(record) || failedToLoad(entry)) {
     return (
       <DetailScreen>
         <LoadError message={errorMessage(record.error ?? entry.error)} onRetry={() => (record.refetch(), entry.refetch())} />

@@ -17,6 +17,7 @@ import { MetaLine } from '../../components/PlaceAndNote';
 import { Text } from '../../components/Text';
 import { dayDiff, parseDate, plural, relativeDay } from '../../lib/format';
 import { turnAction } from '../../lib/formCopy';
+import { failedToLoad } from '../../lib/query';
 import { useReducedMotion } from '../../motion/useReducedMotion';
 import type { ManagerTabScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
@@ -74,7 +75,7 @@ export function ReviewScreen({ route, navigation }: ManagerTabScreenProps<'Revie
       </View>
 
       {/* The line describes the list, so it goes when there is none: the empty card says it instead. */}
-      {current.isError || (current.data && (show === 'forms' ? forms.length : visits.length) === 0) ? null : (
+      {failedToLoad(current) || (current.data && (show === 'forms' ? forms.length : visits.length) === 0) ? null : (
         <Text variant="subhead" color="ink2" style={styles.caption}>
           {show === 'forms' ? 'Forms waiting for you, oldest first.' : 'New visit reports. Make one a task if it needs follow-up.'}
         </Text>
@@ -82,7 +83,7 @@ export function ReviewScreen({ route, navigation }: ManagerTabScreenProps<'Revie
 
       {current.isPending ? (
         <ListSkeleton label="Loading" shape={rowShapes.review} />
-      ) : current.isError ? (
+      ) : failedToLoad(current) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(current.error)} onRetry={() => current.refetch()} />
         </View>

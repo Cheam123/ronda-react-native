@@ -19,6 +19,7 @@ import { Text } from '../../components/Text';
 import { firstName, formatDate, formatDateTime } from '../../lib/format';
 import { messageNumber } from '../../lib/contact';
 import { distanceMeters, formatDistance, NEAR_OUTLET_METRES, parseStampText } from '../../lib/location';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
@@ -42,7 +43,7 @@ export function VisitReportScreen({ route, navigation }: RootScreenProps<'VisitR
       </DetailScreen>
     );
   }
-  if (report.isError || !report.data) {
+  if (failedToLoad(report) || !report.data) {
     return (
       <DetailScreen backLabel="Back">
         <View style={styles.pad}>

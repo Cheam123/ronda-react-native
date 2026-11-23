@@ -3,7 +3,7 @@ import type { TextStyle } from 'react-native';
 /**
  * Font families as loaded by useFonts (one family per weight, see App.tsx).
  * Instrument Sans for everything; Instrument Serif only for the Morning
- * Round-Up and suggested opening lines; IBM Plex Mono for IDs.
+ * Round-Up; IBM Plex Mono for IDs.
  */
 export const fonts = {
   regular: 'InstrumentSans_400Regular',

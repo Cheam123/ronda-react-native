@@ -10,6 +10,7 @@ import { Icon } from '../../components/Icon';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
+import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { space } from '../../theme/tokens';
@@ -44,7 +45,7 @@ export function PickOutletScreen({ route, navigation }: RootScreenProps<'PickOut
     <DetailScreen
       modalHeader={{ title: TITLES[purpose], onCancel: () => navigation.goBack() }}
       list={{
-        data: list.isPending || list.isError ? [] : rows,
+        data: list.isPending || failedToLoad(list) ? [] : rows,
         keyExtractor: (o) => String(o.id),
         renderItem: (o, i) => (
           <CardSlice first={i === 0} last={i === rows.length - 1}>
@@ -65,7 +66,7 @@ export function PickOutletScreen({ route, navigation }: RootScreenProps<'PickOut
       </View>
       {list.isPending ? (
         <ListSkeleton label="Loading outlets" rows={5} shape={rowShapes.outlet} caption="captionStrong" captionStyle={styles.caption} />
-      ) : list.isError ? (
+      ) : failedToLoad(list) ? (
         <LoadError message={errorMessage(list.error)} onRetry={() => list.refetch()} />
       ) : rows.length === 0 ? (
         <EmptyState icon="outlets" title={search ? `No outlets match "${search}"` : 'No outlets yet'} />

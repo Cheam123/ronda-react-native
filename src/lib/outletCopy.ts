@@ -39,6 +39,5 @@ export function outletTags(o: OutletRow): OutletTag[] {
     const next = parseDate(o.next_due_at);
     tags.push({ text: `${plural(calm, 'task')}${next ? `, due ${formatShortDay(next).split(' ')[0]}` : ''}`, tone: 'neutral' });
   }
-  if (o.suggested_count) tags.push({ text: `${o.suggested_count} suggested`, tone: 'suggest' });
   return tags;
 }

@@ -14,7 +14,7 @@ import { Card } from '../../components/Card';
 import { DateField } from '../../components/DateField';
 import { Icon } from '../../components/Icon';
 import { PressableScale } from '../../components/Pressable';
-import { DetailScreen } from '../../components/Screen';
+import { DetailScreen, useFieldScroll } from '../../components/Screen';
 import { SelectField } from '../../components/SelectField';
 import { Sheet, type SheetHandle } from '../../components/Sheet';
 import { Text } from '../../components/Text';
@@ -78,6 +78,7 @@ export function AddTaskScreen({ route, navigation }: RootScreenProps<'AddTask'>)
   const [viewers, setViewers] = useState<number[]>([]);
   const [helpers, setHelpers] = useState<number[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const scroll = useFieldScroll();
   const allowLeave = useConfirmLeave(!!(title?.trim() || remark.trim()), { title: 'Discard this task?', keep: 'Keep editing' });
 
   const outletId = params.outletId ?? r?.lead_id ?? null;
@@ -150,6 +151,7 @@ export function AddTaskScreen({ route, navigation }: RootScreenProps<'AddTask'>)
     setErrors(next);
     if (Object.keys(next).length) {
       haptic.error();
+      scroll.show(['title', 'outlet', 'who', 'due'].filter((k) => next[k]));
       return;
     }
     save.mutate();
@@ -161,32 +163,37 @@ export function AddTaskScreen({ route, navigation }: RootScreenProps<'AddTask'>)
   return (
     <DetailScreen
       keyboard
+      fieldScroll={scroll}
       modalHeader={{ title: 'Add a task', onCancel: () => navigation.goBack(), action: { label: 'Add', onPress: submit, disabled: save.isPending } }}
       bottomBar={<Button label={chosen ? `Add task for ${firstName(chosen.name)}` : 'Add task'} loading={save.isPending} style={styles.flex} onPress={submit} />}
     >
       <Card padded style={styles.block}>
-        <TextField label="Title" grow submitBehavior="blurAndSubmit" returnKeyType="done" value={shownTitle} onChangeText={setTitle} error={errors.title} placeholder="For example: check the grinder before the trial" />
-        <PressableScale
-          onPress={() => navigation.navigate('PickOutlet', { purpose: 'task' })}
-          disabled={!!params.reportId}
-          scaleTo={0.98}
-          accessibilityRole="button"
-          accessibilityLabel={outletName ? `Outlet: ${outletName}. Change` : 'Choose the outlet'}
-          style={[styles.outlet, { borderColor: errors.outlet ? colors.danger : colors.control, backgroundColor: colors.scheme === 'dark' ? colors.raised : colors.panel }]}
-        >
-          {outletName ? <Avatar name={outletName} size={36} shape="tile" /> : <Icon name="outlets" size={22} color={colors.ink2} />}
-          <View style={styles.flex}>
-            <Text variant="footnote" color="ink2">
-              Outlet
-            </Text>
-            <Text variant="bodyStrong" color={outletName ? 'ink' : 'muted'}>
-              {outletName ?? 'Choose an outlet'}
-            </Text>
-          </View>
-          {params.reportId ? null : <Icon name="chevronRight" size={20} color={colors.chevron} strokeWidth={2.2} />}
-        </PressableScale>
+        <View {...scroll.anchor('title')}>
+          <TextField label="Title" grow submitBehavior="blurAndSubmit" returnKeyType="done" value={shownTitle} onChangeText={setTitle} error={errors.title} placeholder="For example: check the grinder before the trial" />
+        </View>
+        <View {...scroll.anchor('outlet')}>
+          <PressableScale
+            onPress={() => navigation.navigate('PickOutlet', { purpose: 'task' })}
+            disabled={!!params.reportId}
+            scaleTo={0.98}
+            accessibilityRole="button"
+            accessibilityLabel={outletName ? `Outlet: ${outletName}. Change` : 'Choose the outlet'}
+            style={[styles.outlet, { borderColor: errors.outlet ? colors.danger : colors.control, backgroundColor: colors.scheme === 'dark' ? colors.raised : colors.panel }]}
+          >
+            {outletName ? <Avatar name={outletName} size={36} shape="tile" /> : <Icon name="outlets" size={22} color={colors.ink2} />}
+            <View style={styles.flex}>
+              <Text variant="footnote" color="ink2">
+                Outlet
+              </Text>
+              <Text variant="bodyStrong" color={outletName ? 'ink' : 'muted'}>
+                {outletName ?? 'Choose an outlet'}
+              </Text>
+            </View>
+            {params.reportId ? null : <Icon name="chevronRight" size={20} color={colors.chevron} strokeWidth={2.2} />}
+          </PressableScale>
+        </View>
         {errors.outlet ? (
-          <Text variant="caption" color="danger">
+          <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
             {errors.outlet}
           </Text>
         ) : null}
@@ -197,9 +204,11 @@ export function AddTaskScreen({ route, navigation }: RootScreenProps<'AddTask'>)
         ) : null}
       </Card>
 
-      <Text variant="label" color="ink2" accessibilityRole="header" style={styles.sectionTitle}>
-        Who does it
-      </Text>
+      <View {...scroll.anchor('who')}>
+        <Text variant="label" color="ink2" accessibilityRole="header" style={styles.sectionTitle}>
+          Who does it
+        </Text>
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.people} accessibilityRole="radiogroup">
         {people.map((p) => {
           const on = p.id === who;
@@ -238,13 +247,15 @@ export function AddTaskScreen({ route, navigation }: RootScreenProps<'AddTask'>)
           );
         })}
       </ScrollView>
-      <Text variant="caption" color={errors.who ? 'danger' : 'ink2'} style={styles.hint}>
+      <Text variant="caption" color={errors.who ? 'danger' : 'ink2'} style={styles.hint} accessibilityLiveRegion={errors.who ? 'polite' : 'none'}>
         {errors.who ?? hint}
       </Text>
 
-      <Text variant="label" color="ink2" accessibilityRole="header" style={styles.sectionTitle}>
-        When
-      </Text>
+      <View {...scroll.anchor('due')}>
+        <Text variant="label" color="ink2" accessibilityRole="header" style={styles.sectionTitle}>
+          When
+        </Text>
+      </View>
       <Card style={styles.flat}>
         <DateField row label="Due date" value={dueDay} onChange={setDueDay} minimumDate={new Date()} />
         <View style={[styles.divider, { backgroundColor: colors.divider }]} />
@@ -268,7 +279,7 @@ export function AddTaskScreen({ route, navigation }: RootScreenProps<'AddTask'>)
         </View>
       </Card>
       {errors.due ? (
-        <Text variant="caption" color="danger" style={styles.hint}>
+        <Text variant="caption" color="danger" style={styles.hint} accessibilityLiveRegion="polite">
           {errors.due}
         </Text>
       ) : null}

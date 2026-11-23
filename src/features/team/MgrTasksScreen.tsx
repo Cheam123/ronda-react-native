@@ -20,6 +20,7 @@ import { Sheet, type SheetHandle } from '../../components/Sheet';
 import { PlaceAndNote } from '../../components/PlaceAndNote';
 import { Text } from '../../components/Text';
 import { doneNote, dueNote, statusColors, statusLabel, toneFor } from '../../lib/taskCopy';
+import { failedToLoad } from '../../lib/query';
 import type { ManagerTabScreenProps, MgrFocus } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
@@ -118,7 +119,7 @@ export function MgrTasksScreen({ route, navigation }: ManagerTabScreenProps<'Mgr
       }
       onRefresh={refetchAll}
       list={{
-        data: current.isPending || current.isError ? [] : rows,
+        data: current.isPending || failedToLoad(current) ? [] : rows,
         keyExtractor: (t) => String(t.id),
         renderItem: (t, i) => (
           <CardSlice first={i === 0} last={i === rows.length - 1}>
@@ -143,7 +144,7 @@ export function MgrTasksScreen({ route, navigation }: ManagerTabScreenProps<'Mgr
 
       {current.isPending ? (
         <ListSkeleton label="Loading tasks" rows={5} shape={rowShapes.managerTask} />
-      ) : current.isError ? (
+      ) : failedToLoad(current) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(current.error)} onRetry={() => current.refetch()} />
         </View>

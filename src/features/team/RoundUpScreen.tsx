@@ -8,6 +8,7 @@ import { ReadingSkeleton } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { DetailScreen } from '../../components/Screen';
 import { Text } from '../../components/Text';
+import { failedToLoad } from '../../lib/query';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
 import { attribution } from './TeamScreen';
@@ -24,7 +25,7 @@ export function RoundUpScreen() {
       </DetailScreen>
     );
   }
-  if (team.isError || !team.data) {
+  if (failedToLoad(team) || !team.data) {
     return (
       <DetailScreen backLabel="Team">
         <LoadError message={errorMessage(team.error)} onRetry={() => team.refetch()} />

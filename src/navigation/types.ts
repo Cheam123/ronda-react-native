@@ -2,8 +2,8 @@ import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-/** The chip the Outlets tab opens on (Today's suggestions card opens 'sugg'). */
-export type OutletsFilter = 'all' | 'customer' | 'prospect' | 'sugg';
+/** The chip the Outlets tab opens on. */
+export type OutletsFilter = 'all' | 'customer' | 'prospect';
 
 /** Field rep tabs: places, not actions (rule 1). Record sits beside the bar. */
 export type RepTabParamList = {
@@ -54,12 +54,13 @@ export type RootStackParamList = {
 
   // Outlets
   Outlet: { id: number; name?: string };
-  OutletSuggested: { id: number; name?: string };
   OutletVisits: { id: number; name?: string };
   OutletOrders: { id: number; name?: string };
   OutletTasks: { id: number; name?: string };
   OutletDetails: { id: number; name?: string };
   OutletDocuments: { id: number; name?: string };
+  ScanMenu: { id: number; name?: string };
+  DrinkIdeas: { id: number; name?: string };
   OutletForm: { id?: number };
   OutletMap: undefined;
   VisitBrief: { id: number; name?: string };
@@ -68,7 +69,8 @@ export type RootStackParamList = {
 
   // Recording
   LogVisit: { outletId?: number; taskId?: number };
-  RecordOrder: { outletId?: number; productIds?: number[]; fromVisit?: boolean };
+  /** `suggested`: products a suggestion asked for, pre-filled at these quantities. */
+  RecordOrder: { outletId?: number; suggested?: { productId: number; quantity: number }[]; fromVisit?: boolean };
   OrderSent: { outletId: number; outletName: string; orderNo: string | null; orderedAt: string; total: number; lines: number };
   VisitReport: { id: number; ids?: number[] };
 

@@ -12,6 +12,7 @@ import { Text } from '../../components/Text';
 import { formatTime, isSameDay, parseDate, relativeDay } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { openTarget } from '../../lib/openTarget';
+import { failedToLoad } from '../../lib/query';
 import type { ToneName } from '../../theme/tokens';
 import { useColors } from '../../theme/ThemeProvider';
 import { fonts } from '../../theme/type';
@@ -94,7 +95,7 @@ export function AlertsScreen() {
 
       {alerts.isPending ? (
         <ListSkeleton label="Loading alerts" rows={4} shape={rowShapes.alert} caption="label" captionStyle={styles.section} />
-      ) : alerts.isError ? (
+      ) : failedToLoad(alerts) ? (
         <View style={styles.block}>
           <LoadError message={errorMessage(alerts.error)} onRetry={() => alerts.refetch()} />
         </View>

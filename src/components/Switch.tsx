@@ -46,7 +46,8 @@ export function SwitchRow({ label, hint, value, onChange }: SwitchRowProps) {
           </Text>
         ) : null}
       </View>
-      <View style={[styles.track, { backgroundColor: value ? colors.brand : colors.scheme === 'dark' ? colors.control : '#E4E7EC' }]}>
+      {/* Off is the control grey: the white knob on it has 3:1, so an off switch is still visible in sunlight. */}
+      <View style={[styles.track, { backgroundColor: value ? colors.brand : colors.control }]}>
         <Moving value={x} kind="translateX" style={styles.knob} />
       </View>
     </Pressable>

@@ -29,11 +29,20 @@ interface Pending {
   timer: ReturnType<typeof setTimeout>;
 }
 
+/** A button at the end of a plain message, in place of Close (the update message's Restart). */
+interface ToastAction {
+  label: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  onPress: () => void;
+}
+
 interface ToastState {
   id: number;
   key?: string;
   message: string;
   tone: 'done' | 'error' | 'info';
+  action?: ToastAction;
 }
 
 interface UndoContextValue {
@@ -44,8 +53,8 @@ interface UndoContextValue {
   undo: (key: string) => void;
   /** Keys waiting to run, so lists can hide those rows meanwhile. */
   pending: Set<string>;
-  /** A plain message in the same place (an error, or "Sent back"). */
-  notify: (message: string, tone?: ToastState['tone']) => void;
+  /** A plain message in the same place (an error, or "Sent back"). `ms` defaults to 4 s. */
+  notify: (message: string, tone?: ToastState['tone'], options?: { action?: ToastAction; ms?: number }) => void;
   /** Lift the toast above a screen's own bottom bar or the tab bar. */
   setBottomOffset: (px: number) => void;
 }
@@ -109,7 +118,10 @@ export function UndoProvider({ children }: { children: ReactNode }) {
     setToast((t) => (t?.key === key ? null : t));
   }, []);
 
-  const notify = useCallback((message: string, tone: ToastState['tone'] = 'info') => showToast({ message, tone }, 4000), [showToast]);
+  const notify = useCallback<UndoContextValue['notify']>(
+    (message, tone = 'info', options) => showToast({ message, tone, action: options?.action }, options?.ms ?? 4000),
+    [showToast],
+  );
 
   // Leaving the app sends everything still waiting.
   useEffect(() => {
@@ -160,6 +172,20 @@ function Toast({ toast, bottom, onUndo, onClose }: { toast: ToastState; bottom: 
           <PressableScale onPress={onUndo} accessibilityLabel="Undo" style={styles.action}>
             <Text variant="bodyStrong" color={colors.toast.action} style={styles.actionText}>
               Undo
+            </Text>
+          </PressableScale>
+        ) : toast.action ? (
+          <PressableScale
+            onPress={() => {
+              onClose();
+              toast.action?.onPress();
+            }}
+            accessibilityLabel={toast.action.accessibilityLabel ?? toast.action.label}
+            accessibilityHint={toast.action.accessibilityHint}
+            style={styles.action}
+          >
+            <Text variant="bodyStrong" color={colors.toast.action} style={styles.actionText}>
+              {toast.action.label}
             </Text>
           </PressableScale>
         ) : (
