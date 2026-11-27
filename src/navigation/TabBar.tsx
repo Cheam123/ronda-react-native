@@ -1,12 +1,13 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { memo, useEffect } from 'react';
-import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
 import { GLIDE } from '../motion/curves';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Icon, RingIcon, type IconName } from '../components/Icon';
+import { PressableScale } from '../components/Pressable';
 import { Text } from '../components/Text';
 import { haptic } from '../lib/haptics';
 import { useReducedMotion } from '../motion/useReducedMotion';
@@ -120,14 +121,16 @@ export function TabBar({ state, descriptors, navigation, withRecord }: BottomTab
             };
 
             return (
-              <Pressable
+              // Gives under the thumb and eases back (the board's 0.92), instead of snapping between sizes.
+              <PressableScale
                 key={route.key}
                 onPress={onPress}
                 onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
+                scaleTo={0.92}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
                 accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
-                style={({ pressed }) => [styles.tab, pressed && { transform: [{ scale: 0.92 }] }]}
+                style={styles.tab}
               >
                 <View>
                   {iconName === 'ring' ? (
@@ -152,7 +155,7 @@ export function TabBar({ state, descriptors, navigation, withRecord }: BottomTab
                 >
                   {label}
                 </Text>
-              </Pressable>
+              </PressableScale>
             );
           })}
         </View>

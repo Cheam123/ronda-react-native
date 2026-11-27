@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { errorMessage } from '../../api/client';
@@ -9,8 +9,8 @@ import { fetchOutlets, outletKeys, type OutletListParams, type OutletRow } from 
 import { useAuth } from '../../auth/AuthProvider';
 import { Avatar } from '../../components/Avatar';
 import { CardSlice, ListRow } from '../../components/Card';
-import { ChipRow, Tag } from '../../components/Chips';
 import { EmptyState, LoadError } from '../../components/EmptyState';
+import { FilterSheet, type FilterOption } from '../../components/FilterSheet';
 import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
@@ -63,6 +63,14 @@ export function OutletsScreen() {
   const rows = list.data?.leads ?? [];
   // The last results stay up while new ones load (or while the search waits for typing to stop): say so.
   const finding = text.trim() !== search || (list.isFetching && list.isPlaceholderData);
+  const shows: FilterOption<OutletsFilter>[] = [
+    { key: 'all', label: 'All outlets', count: counts?.all },
+    { key: 'customer', label: 'Customers', count: counts?.customer },
+    { key: 'prospect', label: 'Prospects', count: counts?.prospect },
+  ];
+  const showing = shows.find((s) => s.key === filter) ?? shows[0];
+  // The filter sits behind a button, so an empty list says when it is narrowed.
+  const narrowed = filter !== 'all';
 
   const open = (o: OutletRow) => navigation.navigate('Outlet', { id: o.id, name: outletName(o) });
   const [preview, setPreview] = useState<OutletRow | null>(null);
@@ -77,11 +85,14 @@ export function OutletsScreen() {
     <TabScreen
       title="Outlets"
       titleAccessory={
-        abilities.create_lead ? (
-          <IconButton onPress={() => navigation.navigate('OutletForm', {})} accessibilityLabel="Add an outlet">
-            <Icon name="plus" size={20} color={colors.body} strokeWidth={2.2} />
-          </IconButton>
-        ) : null
+        <View style={styles.buttons}>
+          <FilterSheet<OutletsFilter> title="Show outlets" options={shows} value={filter} onChange={setFilter} />
+          {abilities.create_lead ? (
+            <IconButton onPress={() => navigation.navigate('OutletForm', {})} accessibilityLabel="Add an outlet">
+              <Icon name="plus" size={20} color={colors.body} strokeWidth={2.2} />
+            </IconButton>
+          ) : null}
+        </View>
       }
       onRefresh={() => list.refetch()}
       list={{
@@ -105,19 +116,6 @@ export function OutletsScreen() {
     >
       <SearchBox value={text} onChange={setText} placeholder="Search name, shop or mobile" accessibilityLabel="Search outlets" />
 
-      <View style={styles.chips}>
-        <ChipRow<OutletsFilter>
-          accessibilityLabel="Show"
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { key: 'all', label: 'All', count: counts?.all },
-            { key: 'customer', label: 'Customers', count: counts?.customer },
-            { key: 'prospect', label: 'Prospects', count: counts?.prospect },
-          ]}
-        />
-      </View>
-
       {list.isPending ? (
         <ListSkeleton label="Loading outlets" rows={5} shape={rowShapes.outlet} caption="captionStrong" captionStyle={styles.caption} />
       ) : failedToLoad(list) ? (
@@ -128,18 +126,26 @@ export function OutletsScreen() {
         <View style={styles.block}>
           <EmptyState
             icon="outlets"
-            title={search ? `No outlets match "${search}"` : 'No outlets yet'}
-            body={
+            title={
               search
-                ? 'Check the spelling, or search by mobile number.'
-                : 'Outlets you add or are given show up here.'
+                ? `No ${narrowed ? showing.label.toLowerCase() : 'outlets'} match “${search}”`
+                : narrowed
+                  ? `No ${showing.label.toLowerCase()} yet`
+                  : 'No outlets yet'
+            }
+            body={
+              narrowed
+                ? 'Choose All outlets with the filter button beside the title to see the rest.'
+                : search
+                  ? 'Check the spelling, or search by mobile number.'
+                  : 'Outlets you add or are given show up here.'
             }
           />
         </View>
       ) : (
         <Animated.View entering={reduced ? undefined : FadeIn.duration(260)}>
           <Text variant="captionStrong" color="ink2" style={styles.caption} accessibilityLiveRegion="polite">
-            {finding ? 'Finding outlets…' : 'Open work first'}
+            {finding ? 'Finding outlets…' : `${showing.label} · open work first`}
           </Text>
         </Animated.View>
       )}
@@ -167,12 +173,21 @@ export function OutletRowItem({ outlet, last, onPress, onLongPress }: { outlet: 
         <Text variant="caption" color="ink2">
           {sub}
         </Text>
+        {/* The open work as a line of text, not pills: red only for overdue, bold for what is close. */}
         {tags.length ? (
-          <View style={styles.tags}>
-            {tags.map((t) => (
-              <Tag key={t.text} size="small" text={t.text} ink={colors.tones[t.tone].ink} bg={colors.tones[t.tone].tile} />
+          <Text variant="caption" color="ink2" style={styles.work}>
+            {tags.map((t, i) => (
+              <Fragment key={t.text}>
+                {i > 0 ? ' · ' : null}
+                <Text
+                  variant={t.tone === 'neutral' ? 'caption' : 'captionStrong'}
+                  color={t.tone === 'critical' ? colors.tones.critical.ink : t.tone === 'neutral' ? 'ink2' : 'body'}
+                >
+                  {t.text}
+                </Text>
+              </Fragment>
             ))}
-          </View>
+          </Text>
         ) : null}
       </View>
     </ListRow>
@@ -181,9 +196,9 @@ export function OutletRowItem({ outlet, last, onPress, onLongPress }: { outlet: 
 
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
-  chips: { marginTop: 7 },
-  caption: { marginTop: 13, marginBottom: 8, marginHorizontal: 20 },
+  buttons: { flexDirection: 'row', gap: 10 },
+  caption: { marginTop: 16, marginBottom: 8, marginHorizontal: 20 },
   block: { marginTop: 20 },
   row: { paddingVertical: 14, paddingHorizontal: 18 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  work: { marginTop: 3 },
 });

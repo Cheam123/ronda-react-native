@@ -1,18 +1,22 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SITE_ROOT, type LocalFile } from '../api/client';
+import { FILES_ROOT, type LocalFile } from '../api/client';
 import { addPhotos } from '../lib/photos';
 import { useColors } from '../theme/ThemeProvider';
 import { Icon } from './Icon';
 import { PressableScale } from './Pressable';
 import { Text } from './Text';
 
-/** A server file path is a full URL in production (S3); make a relative one absolute. */
+/**
+ * A stored file's address. The server's file_path is already a full
+ * files.ronda.asia URL, so it is used as it comes; only a relative path
+ * gets the files domain (never the API's, which does not serve uploads).
+ */
 export function fileUrl(path: string | null | undefined): string | null {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) return path;
-  return `${SITE_ROOT}${path.startsWith('/') ? '' : '/'}${path}`;
+  return `${FILES_ROOT}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
 interface PhotoStripProps {

@@ -69,7 +69,7 @@ export function PickOutletScreen({ route, navigation }: RootScreenProps<'PickOut
       ) : failedToLoad(list) ? (
         <LoadError message={errorMessage(list.error)} onRetry={() => list.refetch()} />
       ) : rows.length === 0 ? (
-        <EmptyState icon="outlets" title={search ? `No outlets match "${search}"` : 'No outlets yet'} />
+        <EmptyState icon="outlets" title={search ? `No outlets match “${search}”` : 'No outlets yet'} />
       ) : (
         <Text variant="captionStrong" color="ink2" style={styles.caption}>
           Open work first

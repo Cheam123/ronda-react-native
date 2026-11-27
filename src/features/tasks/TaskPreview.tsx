@@ -5,7 +5,7 @@ import { Tag } from '../../components/Chips';
 import { Sheet, SheetAction, type SheetHandle } from '../../components/Sheet';
 import { Text } from '../../components/Text';
 import { openDirections } from '../../lib/location';
-import { keepTogether } from '../../lib/format';
+import { firstName, keepTogether } from '../../lib/format';
 import { dueNote, formatDue, riskChip, statusColors, statusLabel } from '../../lib/taskCopy';
 import { useColors } from '../../theme/ThemeProvider';
 
@@ -51,9 +51,10 @@ export const TaskPreview = forwardRef<SheetHandle, { task: TaskRow | null; actio
           <View style={styles.actions}>
             {Number(task.status) === 1 && task.can_accept_task ? <SheetAction label="Start task" hint="Move it to In progress" onPress={run(actions.start)} /> : null}
             {task.can_done_task || task.can_accept_task ? <SheetAction label="Mark as done" hint={`${task.checker ?? 'Your manager'} checks it next, with Undo for ${keepTogether('5 seconds')}`} onPress={run(actions.done)} /> : null}
-            <SheetAction label={`Message ${task.checker ?? 'the checker'}`} hint="Open the task messages" onPress={run(actions.message)} />
+            {/* Named as the task screen's More sheet names it. */}
+            <SheetAction label={task.checker ? `Message ${firstName(task.checker)}` : 'Message the checker'} hint="Open the task messages" onPress={run(actions.message)} />
             {where ? <SheetAction label="Directions" hint={`To ${where}`} onPress={run(() => openDirections({ name: where }))} /> : null}
-            <SheetAction label="Open the task" onPress={run(actions.open)} />
+            <SheetAction label="Open the task" hint="See the details or change its status" onPress={run(actions.open)} last />
           </View>
         </View>
       ) : null}

@@ -274,7 +274,7 @@ export function OutletScreen({ route, navigation }: RootScreenProps<'Outlet'>) {
           {abilities.create_task ? (
             <SheetAction label="Add a task" hint="For someone to do at this outlet" onPress={() => { more.current?.close(); navigation.navigate('AddTask', { outletId: id, outletName: name }); }} />
           ) : null}
-          <SheetAction label="Directions" hint="Open in your maps app" onPress={() => { more.current?.close(); openDirections({ location: o.location, address: o.address, name }); }} />
+          <SheetAction label="Directions" hint="Open in your maps app" last onPress={() => { more.current?.close(); openDirections({ location: o.location, address: o.address, name }); }} />
         </View>
       </Sheet>
     </DetailScreen>

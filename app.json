@@ -3,7 +3,7 @@
     "name": "Ronda",
     "slug": "ronda",
     "scheme": "ronda",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -20,6 +20,7 @@
     },
     "android": {
       "package": "com.ronda.mobile",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#096D91",
         "foregroundImage": "./assets/adaptive-icon-foreground.png",

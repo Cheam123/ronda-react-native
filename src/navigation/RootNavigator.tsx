@@ -43,7 +43,6 @@ import { RoundUpScreen } from '../features/team/RoundUpScreen';
 import { TeamActivityScreen } from '../features/team/TeamActivityScreen';
 import { TeamScreen } from '../features/team/TeamScreen';
 import { VisitReportScreen } from '../features/visits/VisitReportScreen';
-import { ParkedTasksScreen } from '../features/tasks/ParkedTasksScreen';
 import { TaskMessagesScreen } from '../features/tasks/TaskMessagesScreen';
 import { TaskScreen } from '../features/tasks/TaskScreen';
 import { TaskSearchScreen } from '../features/tasks/TaskSearchScreen';
@@ -110,7 +109,10 @@ export function RootNavigator() {
   const screenOptions = {
     headerShown: false,
     contentStyle: { backgroundColor: colors.ground },
-    animation: 'default' as const,
+    // A pushed screen slides in from the right over the one behind it, as the
+    // navigation board draws it and iOS does. Android's own default fades and
+    // zooms instead; iOS keeps its native push either way.
+    animation: 'ios_from_right' as const,
   };
 
   if (status === 'signedOut') {
@@ -147,7 +149,6 @@ export function RootNavigator() {
 
         <Stack.Screen name="Task" component={TaskScreen} />
         <Stack.Screen name="TaskMessages" component={TaskMessagesScreen} />
-        <Stack.Screen name="ParkedTasks" component={ParkedTasksScreen} />
         <Stack.Screen name="TaskSearch" component={TaskSearchScreen} options={{ animation: 'fade' }} />
         <Stack.Screen name="CheckTask" component={CheckTaskScreen} />
 

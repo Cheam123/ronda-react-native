@@ -8,25 +8,26 @@ interface AvatarProps {
   size?: number;
   /** 'circle' for people, 'tile' (rounded square) for outlets. */
   shape?: 'circle' | 'tile';
-  /** Use the brand fill (the signed-in person on Today and Team). */
-  brand?: boolean;
 }
 
-export function Avatar({ name, size = 44, shape = 'circle', brand = false }: AvatarProps) {
+/**
+ * Initials in a circle (a person) or a rounded tile (an outlet). The quiet
+ * palette gives everyone the same grey, the signed-in person included; the
+ * hash stays so a palette with several tints still spreads them by name.
+ */
+export function Avatar({ name, size = 44, shape = 'circle' }: AvatarProps) {
   const colors = useColors();
   const tint = colors.avatars[hashIndex(name, colors.avatars.length)];
-  const bg = brand ? '#0D729E' : tint.bg;
-  const ink = brand ? '#FFFFFF' : tint.ink;
   return (
     <View
       style={[
         styles.base,
-        { width: size, height: size, borderRadius: shape === 'circle' ? size / 2 : Math.round(size * 0.31), backgroundColor: bg },
+        { width: size, height: size, borderRadius: shape === 'circle' ? size / 2 : Math.round(size * 0.31), backgroundColor: tint.bg },
       ]}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Text variant="captionStrong" color={ink} style={{ fontSize: Math.round(size * 0.34), lineHeight: Math.round(size * 0.44) }} allowFontScaling={false}>
+      <Text variant="captionStrong" color={tint.ink} style={{ fontSize: Math.round(size * 0.34), lineHeight: Math.round(size * 0.44) }} allowFontScaling={false}>
         {initials(name, shape === 'tile' ? 'outlet' : 'person')}
       </Text>
     </View>

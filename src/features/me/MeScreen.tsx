@@ -73,7 +73,7 @@ export function MeScreen({ navigation }: RootScreenProps<'Me'>) {
   return (
     <DetailScreen backLabel={role === 'rep' ? 'Today' : 'Team'}>
       <View style={styles.header}>
-        <Avatar name={user.name} size={80} brand />
+        <Avatar name={user.name} size={80} />
         <Text variant="title2" align="center" accessibilityRole="header" style={styles.name}>
           {user.name}
         </Text>

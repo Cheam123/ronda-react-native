@@ -27,10 +27,14 @@ export function useTaskActions() {
     queryClient.invalidateQueries({ queryKey: homeKey });
   }, [queryClient]);
 
-  /** Mark as done after the 5 s Undo window. A New task is started first. */
+  /**
+   * Mark as done after the 5 s Undo window. A New task is started first.
+   * `felt`: the caller already gave the success haptic at the tap (the list's
+   * circle waits for its fill before it gets here).
+   */
   const markDone = useCallback(
-    (input: DoneInput, callbacks: { onUndo?: () => void; onDone?: () => void; quiet?: boolean } = {}) => {
-      haptic.success();
+    (input: DoneInput, callbacks: { onUndo?: () => void; onDone?: () => void; quiet?: boolean; felt?: boolean } = {}) => {
+      if (!callbacks.felt) haptic.success();
       const who = input.checker ? input.checker : 'Your manager';
       schedule({
         key: doneKey(input.id),

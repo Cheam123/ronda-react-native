@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { Sheet, SheetAction, type SheetHandle } from './Sheet';
 
 export interface Choice {
@@ -66,19 +66,27 @@ export function ChoiceSheetHost() {
         if (!picked.current) current.current?.onDismiss?.();
       }}
     >
-      {ask?.choices.map((c) => (
-        <SheetAction
-          key={c.label}
-          label={c.label}
-          hint={c.hint}
-          tone={c.tone}
-          onPress={() => {
-            picked.current = true;
-            sheet.current?.close();
-            c.run();
-          }}
-        />
-      ))}
+      <View style={styles.choices}>
+        {ask?.choices.map((c, i) => (
+          <SheetAction
+            key={c.label}
+            label={c.label}
+            hint={c.hint}
+            tone={c.tone}
+            last={i === ask.choices.length - 1}
+            onPress={() => {
+              picked.current = true;
+              sheet.current?.close();
+              c.run();
+            }}
+          />
+        ))}
+      </View>
     </Sheet>
   );
 }
+
+const styles = StyleSheet.create({
+  // The same room under the title as every other action sheet.
+  choices: { marginTop: 8 },
+});

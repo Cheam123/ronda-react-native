@@ -74,7 +74,7 @@ export function TaskSearchScreen({ navigation }: RootScreenProps<'TaskSearch'>) 
       ) : failedToLoad(results) ? (
         <LoadError message={errorMessage(results.error)} onRetry={() => results.refetch()} />
       ) : (results.data ?? []).length === 0 ? (
-        <EmptyState icon="search" title={`No tasks match "${query}"`} body="Check the spelling, or try the outlet's name." />
+        <EmptyState icon="search" title={`No tasks match “${query}”`} body="Check the spelling, or try the outlet's name." />
       ) : null}
     </DetailScreen>
   );

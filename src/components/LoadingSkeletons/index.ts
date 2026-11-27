@@ -12,4 +12,5 @@ export { BriefLines, BriefSkeleton, OutletSkeleton } from './OutletSkeleton';
 export { FormSkeleton } from './FormSkeleton';
 export { MessagesSkeleton } from './MessagesSkeleton';
 export { DetailsSkeleton, DocumentsSkeleton, ReadingSkeleton } from './DetailsSkeleton';
+export { PeopleSkeleton } from './PeopleSkeleton';
 export { PersonSkeleton } from './PersonSkeleton';

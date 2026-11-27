@@ -50,11 +50,10 @@ export function FormsScreen() {
             <Text variant="section" accessibilityRole="header">
               Your turn
             </Text>
-            <View style={[styles.badge, { backgroundColor: colors.tabBar.badge }]} accessibilityLabel={`${waiting.length} waiting`}>
-              <Text variant="label" color="#FFFFFF" style={styles.badgeText}>
-                {waiting.length}
-              </Text>
-            </View>
+            {/* A grey count, not a red badge (quiet palette): the tab badge already says it in red. */}
+            <Text variant="body" color="muted" style={styles.count} accessibilityLabel={`${waiting.length} waiting`}>
+              {waiting.length}
+            </Text>
           </View>
           <Card style={styles.card}>
             {waiting.map((t, i) => (
@@ -67,9 +66,7 @@ export function FormsScreen() {
       {!searching ? (
         <Card style={[styles.card, styles.records]}>
           <ListRow onPress={() => navigation.navigate('Records')} divider={false} chevron style={styles.recordsRow}>
-            <View style={[styles.tile, { backgroundColor: colors.tones.neutral.tile }]}>
-              <Icon name="records" size={22} color={colors.tones.neutral.ink} />
-            </View>
+            <Icon name="records" size={24} color={colors.ink2} />
             <View style={styles.flex}>
               <Text variant="rowTitle">My records</Text>
               {records.isPending ? (
@@ -104,21 +101,21 @@ export function FormsScreen() {
   );
 }
 
+/** A form waiting on the rep. Quiet palette: a plain grey icon (review or form), and the action in bold ink. */
 function TurnRow({ turn, last, onPress }: { turn: FormTurn; last: boolean; onPress: () => void }) {
   const colors = useColors();
   const approval = turn.stage_type === 'approval';
-  const tone = approval ? colors.tones.brand : colors.tones.form;
   const action = turnAction(turn);
   return (
-    <ListRow onPress={onPress} divider={!last} dividerInset={76} chevron style={styles.turnRow} accessibilityLabel={`${turn.record_title}. ${turnSubtitle(turn)}. ${action}`}>
-      <View style={[styles.tile, styles.turnTile, { backgroundColor: tone.tile }]}>
-        <Icon name={approval ? 'review' : 'forms'} size={22} color={tone.ink} />
+    <ListRow onPress={onPress} divider={!last} dividerInset={56} chevron style={styles.turnRow} accessibilityLabel={`${turn.record_title}. ${turnSubtitle(turn)}. ${action}`}>
+      <View style={styles.turnIcon}>
+        <Icon name={approval ? 'review' : 'forms'} size={24} color={colors.ink2} />
       </View>
       <View style={styles.flex}>
         <Text variant="rowTitle">{turn.record_title}</Text>
         {/* Too long for one line: the form, then who sent it and when. */}
         <MetaLine parts={turnParts(turn)} splitAt={1} variant="subhead" />
-        <Text variant="subhead" color="brandInk" style={styles.action}>
+        <Text variant="subhead" color="ink" style={styles.action}>
           {action}
         </Text>
       </View>
@@ -130,14 +127,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   section: { marginTop: 32 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginBottom: 12 },
-  badge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { fontFamily: fonts.bold, fontSize: 12, lineHeight: 16 },
+  count: { fontFamily: fonts.medium, fontSize: 17, lineHeight: 22 },
   card: { marginHorizontal: space.gutter, borderRadius: radius.card },
   records: { marginTop: 16 },
   recordsRow: { paddingVertical: 16, paddingHorizontal: 18 },
-  tile: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   turnRow: { paddingVertical: 18, paddingHorizontal: 18, alignItems: 'flex-start' },
-  turnTile: { alignSelf: 'flex-start' },
+  // Level with the title's first line.
+  turnIcon: { alignSelf: 'flex-start', marginTop: 1 },
   action: { marginTop: 8, fontFamily: fonts.semibold },
   start: { marginTop: 36 },
   startTitle: { marginHorizontal: 20 },

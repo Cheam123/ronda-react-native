@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, StyleSheet, TextInput, View } from 'react-native';
-import { KeyboardStickyView } from 'react-native-keyboard-controller';
+import { forwardRef, useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { Alert, FlatList, StyleSheet, TextInput, View, type ScrollViewProps } from 'react-native';
+import { KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { deleteChat, editChat, fetchChat, markChatRead, plainText, sendChat, type ChatMessage } from '../../api/chat';
 import { errorMessage, type LocalFile } from '../../api/client';
@@ -25,12 +26,34 @@ import { fonts } from '../../theme/type';
 
 const EDIT_WINDOW_MIN = 15;
 
-/** Talk with the checker on one task. */
 /** Minutes since a moment. Outside the component: it reads the clock, so it must not run during render. */
 function minutesSince(d: Date): number {
   return (Date.now() - d.getTime()) / 60000;
 }
 
+/**
+ * The thread's scroll view, under the FlatList: it lifts with the keyboard by
+ * as much as the composer does (`offset`), so the newest messages stay above
+ * the box you type in. `endRef` gets the same view as the list's own ref:
+ * its scrollToEnd counts the keyboard's room, where the list's stops short.
+ */
+const ThreadScroll = forwardRef<Animated.ScrollView, ScrollViewProps & { offset: number; endRef: RefObject<Animated.ScrollView | null> }>(function ThreadScroll({ offset, endRef, ...props }, ref) {
+  return (
+    <KeyboardChatScrollView
+      {...props}
+      ref={(node) => {
+        endRef.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) ref.current = node;
+      }}
+      offset={offset}
+      automaticallyAdjustContentInsets={false}
+      contentInsetAdjustmentBehavior="never"
+    />
+  );
+});
+
+/** Talk with the checker on one task. */
 export function TaskMessagesScreen({ route, navigation }: RootScreenProps<'TaskMessages'>) {
   const { id, title } = route.params;
   const colors = useColors();
@@ -41,6 +64,8 @@ export function TaskMessagesScreen({ route, navigation }: RootScreenProps<'TaskM
   const [photos, setPhotos] = useState<LocalFile[]>([]);
   const [editing, setEditing] = useState<ChatMessage | null>(null);
   const list = useRef<FlatList<ChatMessage>>(null);
+  const thread = useRef<Animated.ScrollView | null>(null);
+  const renderThread = useCallback((props: ScrollViewProps) => <ThreadScroll {...props} offset={insets.bottom} endRef={thread} />, [insets.bottom]);
   const input = useRef<TextInput>(null);
 
   const chat = useQuery({ queryKey: taskKeys.chat(id), queryFn: () => fetchChat(id), refetchInterval: 20_000 });
@@ -138,8 +163,13 @@ export function TaskMessagesScreen({ route, navigation }: RootScreenProps<'TaskM
           ref={list}
           data={messages}
           keyExtractor={(m) => String(m.id)}
+          // The thread lifts with the keyboard, so the latest messages stay above the box you type in (as in Messages),
+          // instead of the keyboard and the box sliding up over them.
+          renderScrollComponent={renderThread}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           contentContainerStyle={[styles.listContent, messages.length === 0 && styles.emptyContent]}
-          onContentSizeChange={() => list.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={() => (thread.current ?? list.current)?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
             <Text variant="subhead" color="ink2" align="center">
               No messages yet. Ask your checker a question or tell them how it is going.
@@ -218,10 +248,12 @@ export function TaskMessagesScreen({ route, navigation }: RootScreenProps<'TaskM
         </View>
       </KeyboardStickyView>
       <Sheet ref={actionsSheet} title="Your message" subtitle={acting && !acting.editable ? 'Messages can be changed for 15 minutes after you send them.' : undefined} fit>
-        {acting?.editable ? (
-          <SheetAction label="Edit" hint="Change what it says" onPress={editActing} />
-        ) : null}
-        <SheetAction label="Delete" tone="danger" hint="Removes it for everyone" onPress={deleteActing} />
+        <View style={styles.sheetActions}>
+          {acting?.editable ? (
+            <SheetAction label="Edit" hint="Change what it says" onPress={editActing} />
+          ) : null}
+          <SheetAction label="Delete" tone="danger" hint="Removes it for everyone" onPress={deleteActing} last />
+        </View>
       </Sheet>
     </View>
   );
@@ -281,6 +313,8 @@ function Bubble({ message, mine, onLongPress }: { message: ChatMessage; mine: bo
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   pad: { paddingTop: 16 },
+  // The same room under the title as every other action sheet.
+  sheetActions: { marginTop: 8 },
   top: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderBottomWidth: StyleSheet.hairlineWidth },
   back: { flexDirection: 'row', alignItems: 'center', minHeight: 48, width: 92 },
   backLabel: { fontFamily: fonts.medium, fontSize: 17 },

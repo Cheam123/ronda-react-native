@@ -69,7 +69,7 @@ export function TeamScreen({ navigation }: ManagerTabScreenProps<'Team'>) {
           <Icon name="bell" size={22} color={colors.body} strokeWidth={1.8} />
         </IconButton>
         <PressableScale onPress={() => navigation.navigate('Me')} accessibilityLabel="Me" scaleTo={0.92} hitSlop={4}>
-          <Avatar name={user?.name ?? 'Me'} size={44} brand />
+          <Avatar name={user?.name ?? 'Me'} size={44} />
         </PressableScale>
       </View>
     </View>

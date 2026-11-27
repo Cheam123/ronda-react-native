@@ -1,9 +1,10 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { LAND } from '../motion/curves';
 import { useReducedMotion } from '../motion/useReducedMotion';
 import { useColors } from '../theme/ThemeProvider';
 import { Icon } from './Icon';
+import { PressableScale } from './Pressable';
 
 interface CheckCircleProps {
   checked: boolean;
@@ -17,13 +18,15 @@ export function CheckCircle({ checked, onPress, accessibilityLabel, disabled }: 
   const colors = useColors();
   const reduced = useReducedMotion();
   return (
-    <Pressable
+    // The ring gives under the thumb and eases back, rather than snapping to the smaller size.
+    <PressableScale
       onPress={onPress}
       disabled={disabled}
+      scaleTo={checked ? 1 : 0.86}
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled: !!disabled }}
       accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [styles.target, pressed && !checked && styles.pressed]}
+      style={styles.target}
     >
       {checked ? (
         <Animated.View
@@ -35,13 +38,12 @@ export function CheckCircle({ checked, onPress, accessibilityLabel, disabled }: 
       ) : (
         <View style={[styles.ring, { borderColor: colors.check.ring, opacity: disabled ? 0.4 : 1 }]} />
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   target: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  pressed: { transform: [{ scale: 0.86 }] },
   ring: { width: 26, height: 26, borderRadius: 13, borderWidth: 2 },
   fill: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
 });

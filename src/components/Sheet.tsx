@@ -8,11 +8,12 @@ import {
   useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react';
-import { BackHandler, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EASE_OUT } from '../motion/curves';
 import { useReducedMotion } from '../motion/useReducedMotion';
 import { useColors } from '../theme/ThemeProvider';
+import { radius, space, type Palette } from '../theme/tokens';
 import { Text } from './Text';
 
 export interface SheetHandle {
@@ -32,15 +33,24 @@ interface SheetProps {
   stacked?: boolean;
   /** Fixed buttons at the bottom of the sheet. */
   footer?: ReactNode;
+  /** A grey sheet that holds white groups of rows (SheetGroup), as iOS draws a picker. */
+  grouped?: boolean;
   onDismiss?: () => void;
+}
+
+/** The sheet's own colour: white (dark: raised), or the page grey under groups (dark: panel). */
+function sheetSurface(colors: Palette, grouped: boolean) {
+  if (grouped) return colors.scheme === 'dark' ? colors.panel : colors.ground;
+  return colors.scheme === 'dark' ? colors.raised : colors.panel;
 }
 
 /** A sheet that opens halfway; drag up for more room, down to close. */
 export const Sheet = forwardRef<SheetHandle, SheetProps>(function Sheet(
-  { title, subtitle, children, snapPoints = ['55%', '92%'], fit = false, stacked = false, footer, onDismiss },
+  { title, subtitle, children, snapPoints = ['55%', '92%'], fit = false, stacked = false, footer, grouped = false, onDismiss },
   ref,
 ) {
   const colors = useColors();
+  const surface = sheetSurface(colors, grouped);
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
   const { height: windowHeight } = useWindowDimensions();
@@ -83,14 +93,14 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function Sheet(
         <View
           style={[
             styles.footer,
-            { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.scheme === 'dark' ? colors.raised : colors.panel, borderTopColor: colors.divider },
+            { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: surface, borderTopColor: colors.dividerRaised },
           ]}
         >
           {footer}
         </View>
       </BottomSheetFooter>
     ),
-    [footer, insets.bottom, colors],
+    [footer, insets.bottom, colors, surface],
   );
 
   return (
@@ -111,7 +121,7 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function Sheet(
       android_keyboardInputMode="adjustResize"
       animateOnMount={!reduced}
       animationConfigs={animationConfigs}
-      backgroundStyle={{ backgroundColor: colors.scheme === 'dark' ? colors.raised : colors.panel, borderRadius: 28 }}
+      backgroundStyle={{ backgroundColor: surface, borderRadius: 28 }}
       handleIndicatorStyle={{ backgroundColor: colors.control, width: 38, height: 5 }}
       accessibilityLabel={title}
       footerComponent={footer ? renderFooter : undefined}
@@ -134,31 +144,43 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function Sheet(
 });
 
 /** A row of choices inside a sheet (More actions). */
-export function SheetAction({ label, hint, onPress, tone = 'ink' }: { label: string; hint?: string; onPress: () => void; tone?: 'ink' | 'danger' }) {
+export function SheetAction({ label, hint, onPress, tone = 'ink', last = false }: { label: string; hint?: string; onPress: () => void; tone?: 'ink' | 'danger'; /** No divider under the last row. */ last?: boolean }) {
   const colors = useColors();
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={hint ? `${label}. ${hint}` : label}
-      style={({ pressed }) => [styles.action, { borderBottomColor: colors.divider }, pressed && { backgroundColor: colors.pressed }]}
-    >
-      <Text variant="body" color={tone === 'danger' ? 'danger' : 'ink'} style={styles.actionLabel}>
-        {label}
-      </Text>
-      {hint ? (
-        <Text variant="caption" color="ink2">
-          {hint}
+    <View>
+      {/* The highlight runs edge to edge under the thumb; the text and the divider keep the sheet's inset. */}
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={hint ? `${label}. ${hint}` : label}
+        style={({ pressed }) => [styles.action, pressed && { backgroundColor: colors.pressedRaised }]}
+      >
+        <Text variant="body" color={tone === 'danger' ? 'danger' : 'ink'} style={styles.actionLabel}>
+          {label}
         </Text>
-      ) : null}
-    </Pressable>
+        {hint ? (
+          <Text variant="caption" color="ink2">
+            {hint}
+          </Text>
+        ) : null}
+      </Pressable>
+      {last ? null : <View style={[styles.actionDivider, { backgroundColor: colors.dividerRaised }]} />}
+    </View>
   );
 }
 
+/** A white (dark: raised) group of rows on a grouped sheet, inset like an iOS list. */
+export function SheetGroup({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const colors = useColors();
+  return <View style={[styles.group, { backgroundColor: colors.scheme === 'dark' ? colors.raised : colors.panel, borderColor: colors.cardRing }, style]}>{children}</View>;
+}
+
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 8 },
+  content: { paddingHorizontal: space.side, paddingTop: 8 },
+  group: { borderRadius: radius.card, borderWidth: 1, overflow: 'hidden' },
   subtitle: { marginTop: 6 },
   footer: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
-  action: { paddingVertical: 14, borderBottomWidth: 1, minHeight: 52, justifyContent: 'center' },
+  action: { paddingVertical: 14, paddingHorizontal: space.side, marginHorizontal: -space.side, minHeight: 52, justifyContent: 'center' },
+  actionDivider: { height: 1 },
   actionLabel: { fontFamily: 'InstrumentSans_600SemiBold', fontSize: 17, lineHeight: 24 },
 });

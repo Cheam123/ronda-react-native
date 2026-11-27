@@ -162,12 +162,12 @@ export function quantityLabel(qty: number, unit: string): string {
   return `${n} ${qty === 1 || measure || unit.endsWith('s') ? unit : `${unit}s`}`;
 }
 
-/** Joins words with non-breaking spaces, so a short phrase ("11 days overdue") never breaks across lines. */
 /** "overdue since 5:00 PM" → "Overdue since 5:00 PM", for a note that starts its own line. */
 export function capitalise(text: string): string {
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 }
 
+/** Joins words with non-breaking spaces, so a short phrase ("11 days overdue") never breaks across lines. */
 export function keepTogether(text: string): string {
   return text.split(' ').join(String.fromCharCode(160));
 }

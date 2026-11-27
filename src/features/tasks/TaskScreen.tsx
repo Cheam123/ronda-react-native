@@ -31,6 +31,7 @@ import { useBackLabel } from '../../navigation/usePreviousTitle';
 import { useColors } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
 import { useUndo } from '../../undo/UndoProvider';
+import { StatusButton, TaskStatusSheet, type StatusChoice, type StatusMove } from './TaskStatusSheet';
 import { useTaskActions } from './useTaskActions';
 
 /** Index on the New → Completed line. Kept in view and on hold sit at In progress. */
@@ -56,6 +57,9 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
   const [invoice, setInvoice] = useState('');
   const doneSheet = useRef<SheetHandle>(null);
   const moreSheet = useRef<SheetHandle>(null);
+  const statusSheet = useRef<SheetHandle>(null);
+  // The status picked in the sheet, run once the sheet has gone (Done opens its own sheet).
+  const statusMove = useRef<StatusMove | null>(null);
 
   const task = useQuery({ queryKey: taskKeys.detail(id), queryFn: () => fetchTask(id) });
   // Opening a task is calm: the pill animates only once the status has
@@ -100,18 +104,26 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
   const risk = shownStatus <= 2 ? riskChip(due) : null;
   const checker = t.checker ?? 'Your manager';
   const outletName = t.outlet_name ?? t.lead ?? 'Outlet';
-  const isNew = shownStatus === 1 && t.can_accept_task;
-  const inProgress = shownStatus === 2 && t.can_done_task;
   const done = shownStatus === 3;
   // Back in progress after the checker sent it back: their reason leads.
   const sentBack = shownStatus === 2 && t.sent_back ? t.sent_back : null;
   const doneByYou = !!t.done_by && t.done_by === user?.name;
+  // Where this person may move the task, by the server's flags. A new task can
+  // go straight to done (it is started first), as on the Tasks list.
+  const open = shownStatus === 1 || shownStatus === 2;
+  const canStart = shownStatus === 1 && t.can_accept_task;
+  const canFinish = canStart || (shownStatus === 2 && t.can_done_task);
+  const statusChoices = [
+    canStart && { move: 'start', status: 2, hint: 'You will start this task.' },
+    canFinish && { move: 'done', status: 3, hint: sentBack ? `${checker} checks it again.` : `${checker} checks it next.` },
+    open && t.can_kiv_task && { move: 'kiv', status: 6, hint: 'It moves out of your open tasks.' },
+    open && t.can_hold_task && { move: 'hold', status: 8, hint: 'Pause it until it can go on.' },
+  ].filter(Boolean) as StatusChoice[];
+  const currentHint = shownStatus === 1 ? 'Not started yet.' : sentBack ? 'Sent back to you to finish.' : 'You are working on it.';
   const moreActions = [
-    t.can_kiv_task && { key: 'kiv', label: 'Keep in view', hint: 'It moves out of your open tasks.' },
-    t.can_hold_task && { key: 'hold', label: 'Put on hold', hint: 'Pause it until it can go on.' },
     { key: 'visit', label: 'Log a visit here', hint: `At ${outletName}` },
     { key: 'messages', label: `Message ${firstName(checker)}`, hint: 'Open the task messages' },
-  ].filter(Boolean) as { key: string; label: string; hint: string }[];
+  ];
   // Say what More holds, as the sheet will list it.
   const moreLabel = `More: ${moreActions.map((a) => a.label.toLowerCase()).join(', ')}`;
   const salesError = amountProblem(sales);
@@ -120,7 +132,6 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
     { label: 'Checker', value: checker },
     // Not on your own task: the board leaves it out, it is you.
     ...(t.subscriber && t.subscriber !== user?.name ? [{ label: 'Who does it', value: t.subscriber }] : []),
-    ...(t.reminder_at ? [{ label: 'Your reminder', value: friendlyDateTime(t.reminder_at) }] : []),
     ...(t.invoice_no ? [{ label: 'Invoice no.', value: t.invoice_no, mono: true }] : []),
   ];
 
@@ -180,11 +191,19 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
 
   const runMore = (key: string) => {
     moreSheet.current?.close();
-    // Parking waits 5 s with Undo in the toast; the screen shows the new status once it is sent.
-    if (key === 'kiv') actions.keepInView(t.id, { onDone: () => task.refetch() });
-    if (key === 'hold') actions.hold(t.id, { onDone: () => task.refetch() });
     if (key === 'visit') navigation.navigate('LogVisit', { outletId: t.lead_id ?? undefined, taskId: t.id });
     if (key === 'messages') navigation.navigate('TaskMessages', { id: t.id, title: t.title });
+  };
+
+  // Runs after the status sheet has gone, so the Mark as done sheet opens on its own.
+  const runStatus = () => {
+    const move = statusMove.current;
+    statusMove.current = null;
+    if (move === 'start') start();
+    if (move === 'done') openDone();
+    // Parking waits 5 s with Undo in the toast; the screen shows the new status once it is sent.
+    if (move === 'kiv') actions.keepInView(t.id, { onDone: () => task.refetch() });
+    if (move === 'hold') actions.hold(t.id, { onDone: () => task.refetch() });
   };
 
   const bottomBar = justDone ? (
@@ -192,15 +211,10 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
       {canUndo ? <Button label="Undo" variant="secondary" style={styles.side} onPress={() => actions.undo(`task-done-${t.id}`)} /> : null}
       <Button label={backLabel} style={styles.flex} onPress={() => navigation.goBack()} />
     </>
-  ) : isNew ? (
+  ) : statusChoices.length ? (
     <>
       <Button label="More" variant="secondary" style={styles.side} onPress={() => moreSheet.current?.open()} accessibilityLabel={moreLabel} />
-      <Button label="Start task" style={styles.flex} onPress={start} loading={busy} />
-    </>
-  ) : inProgress ? (
-    <>
-      <Button label="More" variant="secondary" style={styles.side} onPress={() => moreSheet.current?.open()} accessibilityLabel={moreLabel} />
-      <Button label="Mark as done" style={styles.flex} onPress={openDone} />
+      <StatusButton status={shownStatus} onPress={() => statusSheet.current?.open()} loading={busy} animate={!reduced && statusChanged} style={styles.flex} />
     </>
   ) : null;
 
@@ -384,12 +398,23 @@ export function TaskScreen({ route, navigation }: RootScreenProps<'Task'>) {
       </Sheet>
 
       <Sheet ref={moreSheet} title="More" fit>
-        <View style={styles.sheetBody}>
-          {moreActions.map((a) => (
-            <SheetAction key={a.key} label={a.label} hint={a.hint} onPress={() => runMore(a.key)} />
+        <View style={styles.moreBody}>
+          {moreActions.map((a, i) => (
+            <SheetAction key={a.key} label={a.label} hint={a.hint} onPress={() => runMore(a.key)} last={i === moreActions.length - 1} />
           ))}
         </View>
       </Sheet>
+
+      <TaskStatusSheet
+        ref={statusSheet}
+        current={shownStatus}
+        currentHint={currentHint}
+        choices={statusChoices}
+        onPick={(move) => {
+          statusMove.current = move;
+        }}
+        onClosed={runStatus}
+      />
     </DetailScreen>
   );
 }
@@ -421,7 +446,8 @@ const styles = StyleSheet.create({
   reference: { paddingRight: 8 },
   header: { paddingHorizontal: 20, paddingTop: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  title: { marginTop: 12, fontSize: 28, lineHeight: 34 },
+  // The board's -0.025 em at 28 pt, as the record and form titles set it (the title variant's -0.03 em is for 30 pt).
+  title: { marginTop: 12, fontSize: 28, lineHeight: 34, letterSpacing: -0.7 },
   remark: { marginTop: 8 },
   banner: { marginTop: 16, marginHorizontal: space.gutter, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, paddingHorizontal: 16, borderRadius: radius.tile },
   sentBack: { marginTop: 16, marginHorizontal: space.gutter, paddingVertical: 14, paddingHorizontal: 16, borderRadius: radius.tile, gap: 4 },
@@ -439,6 +465,8 @@ const styles = StyleSheet.create({
   badge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontFamily: 'InstrumentSans_700Bold', fontSize: 12, lineHeight: 16 },
   sheetBody: { marginTop: 16, gap: 12 },
+  // Rows sit closer under the title than fields do, as in every other More sheet.
+  moreBody: { marginTop: 8 },
   sheetInput: { fontSize: 17, lineHeight: 24 },
   salesRow: { flexDirection: 'row', gap: 12 },
   rm: { marginRight: 6 },

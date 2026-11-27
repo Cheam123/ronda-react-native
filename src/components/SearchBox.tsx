@@ -1,6 +1,6 @@
 import { StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useColors } from '../theme/ThemeProvider';
-import { space } from '../theme/tokens';
+import { radius, space } from '../theme/tokens';
 import { fonts } from '../theme/type';
 import { Icon } from './Icon';
 import { IconButton } from './IconButton';
@@ -43,6 +43,6 @@ export function SearchBox({
 }
 
 const styles = StyleSheet.create({
-  search: { marginTop: 14, marginHorizontal: space.gutter, minHeight: 48, borderRadius: 14, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 14, paddingRight: 6 },
+  search: { marginTop: 14, marginHorizontal: space.gutter, minHeight: 48, borderRadius: radius.card, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 14, paddingRight: 6 },
   input: { flex: 1, fontFamily: fonts.regular, fontSize: 16, minHeight: 46 },
 });

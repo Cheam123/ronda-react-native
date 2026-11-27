@@ -67,7 +67,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       >
         <View
           pointerEvents="none"
-          style={[styles.ring, { borderColor: focused && !error ? 'rgba(13,114,158,0.14)' : 'transparent' }]}
+          // Dark mode tints the halo with the dark brand blue; the light one barely shows on a dark page.
+          style={[styles.ring, { borderColor: focused && !error ? (colors.scheme === 'dark' ? 'rgba(71,176,221,0.2)' : 'rgba(13,114,158,0.14)') : 'transparent' }]}
         />
         {leading}
         <Input

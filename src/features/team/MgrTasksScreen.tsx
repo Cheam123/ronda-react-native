@@ -9,8 +9,8 @@ import { fetchAreas } from '../../api/visits';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { CardSlice } from '../../components/Card';
-import { ChipRow, Tag } from '../../components/Chips';
 import { EmptyState, LoadError } from '../../components/EmptyState';
+import { FilterSheet, type FilterOption } from '../../components/FilterSheet';
 import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
@@ -18,8 +18,9 @@ import { TabScreen } from '../../components/Screen';
 import { SelectField } from '../../components/SelectField';
 import { Sheet, type SheetHandle } from '../../components/Sheet';
 import { PlaceAndNote } from '../../components/PlaceAndNote';
+import { signColor, StatusSign } from '../../components/StatusSign';
 import { Text } from '../../components/Text';
-import { doneNote, dueNote, statusColors, statusLabel, toneFor } from '../../lib/taskCopy';
+import { doneNote, dueNote, statusLabel, toneFor } from '../../lib/taskCopy';
 import { failedToLoad } from '../../lib/query';
 import type { ManagerTabScreenProps, MgrFocus } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
@@ -67,6 +68,8 @@ export function MgrTasksScreen({ route, navigation }: ManagerTabScreenProps<'Mgr
   const chip = CHIPS[at];
   const activeFilters = (person ? 1 : 0) + (area ? 1 : 0);
   const refetchAll = () => Promise.all(lists.map((l) => l.refetch()));
+  // The list to show, from the filter sheet the button beside the title opens (as on the rep's Tasks and Outlets).
+  const shows: FilterOption<MgrFocus>[] = CHIPS.map((c, i) => ({ key: c.key, label: c.label, count: lists[i].data?.tasks.length }));
 
   const open = (t: TaskRow) => (Number(t.status) === 3 ? navigation.navigate('CheckTask', { id: t.id, title: t.title }) : navigation.navigate('Task', { id: t.id, title: t.title }));
 
@@ -109,6 +112,7 @@ export function MgrTasksScreen({ route, navigation }: ManagerTabScreenProps<'Mgr
       title="Tasks"
       titleAccessory={
         <>
+          <FilterSheet<MgrFocus> title="Show tasks" options={shows} value={focus} onChange={setFocus} />
           <IconButton onPress={() => filters.current?.open()} accessibilityLabel={`More filters: person, area${activeFilters ? `, ${activeFilters} on` : ''}`} dot={activeFilters > 0}>
             <Icon name="sliders" size={20} color={colors.body} strokeWidth={2} />
           </IconButton>
@@ -129,16 +133,9 @@ export function MgrTasksScreen({ route, navigation }: ManagerTabScreenProps<'Mgr
       }}
       overlay={filterSheet}
     >
-      <View style={styles.chips}>
-        <ChipRow<MgrFocus>
-          accessibilityLabel="Show"
-          value={focus}
-          onChange={setFocus}
-          options={CHIPS.map((c, i) => ({ key: c.key, label: c.label, count: lists[i].data?.tasks.length }))}
-        />
-      </View>
-      <Text variant="captionStrong" color="ink2" style={styles.caption}>
-        {chip.caption}
+      {/* The choice sits behind the filter button, so the caption names the list first. */}
+      <Text variant="captionStrong" color="ink2" style={styles.caption} accessibilityLiveRegion="polite">
+        {chip.label} · {chip.caption.charAt(0).toLowerCase() + chip.caption.slice(1)}
         {activeFilters ? ` · ${[person && people.data?.find((p) => p.id === person)?.name, area && areas.data?.find((a) => a.id === area)?.name].filter(Boolean).join(', ')}` : ''}
       </Text>
 
@@ -158,18 +155,36 @@ export function MgrTasksScreen({ route, navigation }: ManagerTabScreenProps<'Mgr
   );
 }
 
+/**
+ * A task's status as its sign and its name, no pill (quiet palette): grey,
+ * red only for Rejected.
+ */
+function StatusWord({ status }: { status: number }) {
+  const colors = useColors();
+  return (
+    <View style={styles.statusWord}>
+      <StatusSign status={status} size={14} strokeWidth={2.4} />
+      <Text variant="footnote" color={signColor(colors, status)} style={styles.statusText}>
+        {statusLabel(status)}
+      </Text>
+    </View>
+  );
+}
+
 /** One task on the manager's list: who does it, what, where and when, and its status. */
 export function MgrTaskRow({ task, last, onPress, hideWho = false }: { task: TaskRow; last: boolean; onPress: () => void; hideWho?: boolean }) {
   const colors = useColors();
   // At the largest text sizes the status goes under the title instead of squeezing it.
   const large = useWindowDimensions().fontScale > 1.35;
-  const tone = colors.tones[toneFor(task.risk)];
+  const risk = toneFor(task.risk);
   const done = Number(task.status) === 3;
   const note = done
     ? doneNote(task.done_date)
     : dueNote({ status: task.status, risk: task.risk, dueAt: task.due_at, dueDate: task.task_due_date, dueTime: task.task_due_time });
+  // Quiet palette: red only when overdue, bold ink when at risk, grey otherwise.
+  const quiet = done || risk === 'neutral';
+  const noteColor = quiet ? colors.ink2 : risk === 'critical' ? colors.tones.critical.ink : colors.body;
   const where = task.outlet_name ?? task.lead_name ?? 'No outlet';
-  const status = statusColors(colors, Number(task.status));
   const who = task.subscriber ?? 'No one yet';
   return (
     <Pressable
@@ -185,29 +200,30 @@ export function MgrTaskRow({ task, last, onPress, hideWho = false }: { task: Tas
           variant="caption"
           place={where}
           note={note}
-          noteStrong={!(done || task.risk === 'on_track')}
-          noteColor={done || task.risk === 'on_track' ? colors.ink2 : tone.ink}
+          noteStrong={!quiet}
+          noteColor={noteColor}
         />
         {large ? (
           <View style={styles.tagBelow}>
-            <Tag size="small" style={styles.status} text={statusLabel(Number(task.status))} ink={status.ink} bg={status.bg} />
+            <StatusWord status={Number(task.status)} />
           </View>
         ) : null}
       </View>
-      {large ? null : <Tag size="small" style={styles.status} text={statusLabel(Number(task.status))} ink={status.ink} bg={status.bg} />}
+      {large ? null : <StatusWord status={Number(task.status)} />}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
-  chips: { marginTop: 7 },
-  caption: { marginTop: 13, marginBottom: 8, marginHorizontal: 20 },
+  caption: { marginTop: 16, marginBottom: 8, marginHorizontal: 20 },
   // The caption above already spaces it like a list.
   block: { marginTop: 0 },
   card: { marginHorizontal: space.gutter, borderRadius: radius.card },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 14, paddingHorizontal: 18, minHeight: 64 },
-  status: { paddingHorizontal: 8 },
+  // Level with the title's line (bodyStrong, 22 pt), at the right of the row.
+  statusWord: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 22 },
+  statusText: { fontFamily: 'InstrumentSans_500Medium' },
   filterFields: { marginTop: 16, gap: 16 },
   tagBelow: { marginTop: 6 },
 });

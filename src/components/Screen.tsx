@@ -1,11 +1,12 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useScrollToTop } from '@react-navigation/native';
 import { useMemo, useRef, useState, type ReactElement, type ReactNode, type RefObject } from 'react';
-import { Platform, RefreshControl, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, RefreshControl, StyleSheet, View, type FlatList, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { KeyboardAwareScrollView, type KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
-import Animated, { Extrapolation, interpolate, LinearTransition, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, LinearTransition, useAnimatedScrollHandler, useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { errorMessage } from '../api/client';
 import { haptic } from '../lib/haptics';
+import { Moving } from '../motion/Moving';
 import { useReducedMotion } from '../motion/useReducedMotion';
 import { useTabBarSpace } from '../navigation/TabBar';
 import { usePreviousTitle } from '../navigation/usePreviousTitle';
@@ -81,6 +82,9 @@ export function TabScreen<T = never>({ title, compactTitle, header, titleAccesso
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const bottomSpace = useTabBarSpace();
+  // Tapping the tab you are on scrolls back to the top, as on iOS.
+  const scroller = useRef<FlatList<T> & ScrollView>(null);
+  useScrollToTop(scroller);
   const y = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
     y.value = e.contentOffset.y;
@@ -126,6 +130,7 @@ export function TabScreen<T = never>({ title, compactTitle, header, titleAccesso
     <View style={[styles.fill, { backgroundColor: colors.ground }]}>
       {list ? (
         <Animated.FlatList
+          ref={scroller}
           data={list.data as T[]}
           keyExtractor={list.keyExtractor}
           renderItem={({ item, index }) => list.renderItem(item, index)}
@@ -135,11 +140,21 @@ export function TabScreen<T = never>({ title, compactTitle, header, titleAccesso
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
+          // Scrolling the list puts the keyboard away (a search box at the top).
+          keyboardDismissMode="on-drag"
           contentContainerStyle={contentContainerStyle}
           refreshControl={refreshControl}
         />
       ) : (
-        <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={contentContainerStyle} refreshControl={refreshControl}>
+        <Animated.ScrollView
+          ref={scroller}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={contentContainerStyle}
+          refreshControl={refreshControl}
+        >
           {top}
         </Animated.ScrollView>
       )}
@@ -310,23 +325,32 @@ export function DetailScreen<T = never>({
     />
   ) : undefined;
 
-  const body = (
-    <>
-      {top}
-      {children}
-    </>
-  );
+  // The back link (or Cancel / Save) stays pinned at the top, as an iOS bar does,
+  // instead of scrolling away with the page; a hairline fades in under it once
+  // the content passes beneath. At rest the screen looks as it did.
+  const y = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    y.value = e.contentOffset.y;
+  });
+  const edge = useDerivedValue(() => interpolate(y.value, [0, 12], [0, 1], Extrapolation.CLAMP));
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.ground, paddingTop: insets.top }]}>
+      <View style={[styles.pinned, { backgroundColor: colors.ground }]}>
+        {top}
+        {/* Through Moving, so a re-render of the screen never resets the line while it is scrolled. */}
+        <Moving value={edge} kind="fade" pointerEvents="none" style={[styles.pinnedEdge, { backgroundColor: colors.line }]} />
+      </View>
       {list ? (
         <Animated.FlatList
           data={list.data as T[]}
           keyExtractor={list.keyExtractor}
           renderItem={({ item, index }) => list.renderItem(item, index)}
-          ListHeaderComponent={body}
+          ListHeaderComponent={<>{children}</>}
           ListFooterComponent={list.footer ? <>{list.footer}</> : null}
           itemLayoutAnimation={list.animateRows ? LinearTransition.duration(300) : undefined}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           refreshControl={refresh}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -335,16 +359,27 @@ export function DetailScreen<T = never>({
       ) : keyboard ? (
         <KeyboardAwareScrollView
           ref={fieldScroll?.ref}
-          onScroll={fieldScroll?.onScroll}
+          onScroll={(e) => {
+            fieldScroll?.onScroll(e);
+            y.set(e.nativeEvent.contentOffset.y);
+          }}
+          scrollEventThrottle={16}
           bottomOffset={24}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[{ paddingBottom: bottomPad }, contentStyle]}
         >
-          {body}
+          {children}
         </KeyboardAwareScrollView>
       ) : (
-        <Animated.ScrollView refreshControl={refresh} keyboardShouldPersistTaps="handled" contentContainerStyle={[{ paddingBottom: bottomPad }, contentStyle]}>
-          {body}
+        <Animated.ScrollView
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          refreshControl={refresh}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={[{ paddingBottom: bottomPad }, contentStyle]}
+        >
+          {children}
         </Animated.ScrollView>
       )}
       {bottomBar ? <BottomBar>{bottomBar}</BottomBar> : null}
@@ -391,6 +426,9 @@ const styles = StyleSheet.create({
   },
   compactTitle: { paddingVertical: 11, fontSize: 17 },
   statusShield: { position: 'absolute', top: 0, left: 0, right: 0 },
+  // Above the scroll view, so the content slides under it; zIndex keeps it over a row that is pressed or animating.
+  pinned: { zIndex: 1 },
+  pinnedEdge: { position: 'absolute', left: 0, right: 0, bottom: 0, height: StyleSheet.hairlineWidth },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 6, minHeight: 48 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 48, paddingRight: 8, maxWidth: '70%' },
   backLabel: { fontFamily: 'InstrumentSans_500Medium', fontSize: 17 },

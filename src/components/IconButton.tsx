@@ -30,7 +30,8 @@ export function IconButton({ onPress, accessibilityLabel, children, dot, size = 
       ]}
     >
       {children}
-      {dot ? <View style={[styles.dot, { backgroundColor: colors.scheme === 'dark' ? '#F04438' : '#B42318', borderColor: colors.scheme === 'dark' ? colors.raised : colors.panel }]} /> : null}
+      {/* Blue, as everything new is (quiet palette): red is kept for what the rep must act on. */}
+      {dot ? <View style={[styles.dot, { backgroundColor: colors.brand, borderColor: colors.scheme === 'dark' ? colors.raised : colors.panel }]} /> : null}
     </PressableScale>
   );
 }

@@ -14,8 +14,15 @@ const BASE = `${(process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8000').repl
 
 export const API_BASE = BASE;
 
-/** Files and photos the backend stores sit under the site root, not /api/mobile. */
+/** The website itself (privacy and terms pages), not /api/mobile. */
 export const SITE_ROOT = BASE.replace(/\/api\/mobile$/, '');
+
+/**
+ * Uploaded files live in S3 behind CloudFront, whatever API the app talks to.
+ * The server normally sends full URLs on this domain; only a relative path
+ * (the server's AWS_URL unset) needs it added. Direct S3 links are refused.
+ */
+export const FILES_ROOT = 'https://files.ronda.asia';
 
 export class ApiError extends Error {
   status: number;

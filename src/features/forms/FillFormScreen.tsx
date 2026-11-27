@@ -709,7 +709,7 @@ function PreviewRow({ step, last }: { step: PreviewStep; last: boolean }) {
     <View style={styles.previewRow}>
       {!last ? <View style={[styles.previewLine, { backgroundColor: colors.line }]} /> : null}
       {step.kind === 'you' ? (
-        <Avatar name={user?.name ?? 'You'} size={28} brand />
+        <Avatar name={user?.name ?? 'You'} size={28} />
       ) : (
         <View style={[styles.previewDot, { backgroundColor: tone.tile }]}>
           <Icon name={PREVIEW_ICON[step.kind]} size={15} color={tone.ink} strokeWidth={2.2} />

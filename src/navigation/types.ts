@@ -47,7 +47,6 @@ export type RootStackParamList = {
   // Tasks
   Task: { id: number; title?: string };
   TaskMessages: { id: number; title?: string };
-  ParkedTasks: undefined;
   TaskSearch: undefined;
   CheckTask: { id: number; title?: string };
   AddTask: { outletId?: number; outletName?: string; reportId?: number; title?: string; assigneeId?: number } | undefined;

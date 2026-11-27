@@ -327,7 +327,7 @@ function QtyField({ qty, unit, name, onQty }: { qty: number; unit: string; name:
         accessibilityLabel={`${label} of ${name}`}
         accessibilityHint="Type a quantity"
         hitSlop={2}
-        style={styles.qtyTap}
+        style={({ pressed }) => [styles.qtyTap, pressed && { opacity: 0.5 }]}
       >
         <Text variant="captionStrong" align="center" style={styles.qty}>
           {label}

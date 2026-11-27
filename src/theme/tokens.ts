@@ -36,6 +36,10 @@ export interface Palette {
   coral: string;
   /** Pressed state of a row. */
   pressed: string;
+  /** Pressed state of a row on a sheet or other raised surface, where `pressed` would match the surface in dark mode. */
+  pressedRaised: string;
+  /** A row divider on a sheet or other raised surface (`divider` disappears on raised in dark mode). */
+  dividerRaised: string;
   /** Hairline ring around cards and lists. */
   cardRing: string;
   primary: { bg: string; fg: string };
@@ -78,6 +82,8 @@ export const light: Palette = {
   brandTint: '#E5F0F5',
   coral: '#FF6B4E',
   pressed: '#F9FAFB',
+  pressedRaised: '#F2F4F7',
+  dividerRaised: '#F2F4F7',
   cardRing: 'rgba(16,24,40,0.06)',
   primary: { bg: '#101828', fg: '#FFFFFF' },
   secondary: { bg: '#FFFFFF', fg: '#101828', border: '#D0D5DD' },
@@ -87,8 +93,9 @@ export const light: Palette = {
   segmented: { track: '#EEF0F3', thumb: '#FFFFFF' },
   tabBar: {
     bg: 'rgba(255,255,255,0.82)',
-    capsule: 'rgba(13,114,158,0.12)',
-    active: '#0A5A7D',
+    // Quiet palette: the chosen tab is ink on a grey capsule, not brand blue.
+    capsule: 'rgba(16,24,40,0.07)',
+    active: '#101828',
     inactive: '#475467',
     badge: '#B42318',
     ring: 'rgba(255,255,255,0.7)',
@@ -117,15 +124,8 @@ export const light: Palette = {
     parked: { ink: '#475467', bg: '#F2F4F7', dot: '#98A2B3' },
     rejected: { ink: '#B42318', bg: '#FEF3F2', dot: '#F04438' },
   },
-  avatars: [
-    { bg: '#EFF8FF', ink: '#175CD3' },
-    { bg: '#F0FDF9', ink: '#107569' },
-    { bg: '#FDF2FA', ink: '#C11574' },
-    { bg: '#F4F3FF', ink: '#5925DC' },
-    { bg: '#FFF6ED', ink: '#C4320A' },
-    { bg: '#F8F9FC', ink: '#363F72' },
-    { bg: '#ECFDF3', ink: '#067647' },
-  ],
+  // Quiet palette: every person and outlet gets the same grey initials (no tint per name).
+  avatars: [{ bg: '#F2F4F7', ink: '#344054' }],
 };
 
 export const dark: Palette = {
@@ -148,6 +148,8 @@ export const dark: Palette = {
   brandTint: '#0E2A38',
   coral: '#FF6B4E',
   pressed: '#1A2230',
+  pressedRaised: '#283244',
+  dividerRaised: '#242D3B',
   cardRing: 'rgba(255,255,255,0.06)',
   primary: { bg: '#F2F4F7', fg: '#0B0F17' },
   secondary: { bg: '#1A2230', fg: '#F2F4F7', border: '#3A4558' },
@@ -157,8 +159,8 @@ export const dark: Palette = {
   segmented: { track: '#1A2230', thumb: '#2E394B' },
   tabBar: {
     bg: 'rgba(26,34,48,0.78)',
-    capsule: 'rgba(71,176,221,0.18)',
-    active: '#7CC8EE',
+    capsule: 'rgba(255,255,255,0.10)',
+    active: '#F2F4F7',
     inactive: '#A9B1BF',
     badge: '#D92D20',
     ring: 'rgba(255,255,255,0.08)',
@@ -187,15 +189,7 @@ export const dark: Palette = {
     parked: { ink: '#D0D5DD', bg: '#1F2734', dot: '#8B95A7' },
     rejected: { ink: '#FDA29B', bg: '#3A1513', dot: '#F04438' },
   },
-  avatars: [
-    { bg: '#102A56', ink: '#84CAFF' },
-    { bg: '#0B2D2A', ink: '#5FE9D0' },
-    { bg: '#3B1430', ink: '#FAA7E0' },
-    { bg: '#2A1E5C', ink: '#BDB4FE' },
-    { bg: '#3A1A0A', ink: '#F7B27A' },
-    { bg: '#1B1F33', ink: '#B3B8DB' },
-    { bg: '#0E2A1F', ink: '#75E0A7' },
-  ],
+  avatars: [{ bg: '#1F2734', ink: '#D0D5DD' }],
 };
 
 /** The splash and brand surfaces keep their own colour in both themes. */

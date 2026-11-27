@@ -19,14 +19,14 @@ interface RecordAction {
   title: string;
   sub: string;
   icon: IconName;
-  tone: 'brand' | 'good' | 'form' | 'serious';
 }
 
+/** Each drawn in ink (quiet palette): the icon and the words tell them apart, not four colours. */
 const ACTIONS: RecordAction[] = [
-  { key: 'visit', title: 'Log a visit', sub: 'With a location stamp', icon: 'visits', tone: 'brand' },
-  { key: 'order', title: 'Record an order', sub: 'Products and quantities', icon: 'receipt', tone: 'good' },
-  { key: 'form', title: 'Start a form', sub: 'Checks and requests', icon: 'forms', tone: 'form' },
-  { key: 'outlet', title: 'Add an outlet', sub: 'A new prospect', icon: 'outlets', tone: 'serious' },
+  { key: 'visit', title: 'Log a visit', sub: 'With a location stamp', icon: 'visits' },
+  { key: 'order', title: 'Record an order', sub: 'Products and quantities', icon: 'receipt' },
+  { key: 'form', title: 'Start a form', sub: 'Checks and requests', icon: 'forms' },
+  { key: 'outlet', title: 'Add an outlet', sub: 'A new prospect', icon: 'outlets' },
 ];
 
 /** The round Record button beside the rep's tab bar, and the menu it opens. */
@@ -119,7 +119,6 @@ function RecordMenu({
     }
   }, [open, mounted, reduced, shown]);
 
-  const tone = (t: RecordAction['tone']) => colors.tones[t].ink;
   // At very large text the tiles stack into one column.
   const columns = fontScale > 1.35 ? 1 : 2;
   // Redraw the moving parts only for a new look; the value carries on.
@@ -158,7 +157,7 @@ function RecordMenu({
                 style={[styles.tile, columns === 2 && styles.tileFill, { backgroundColor: isDark ? colors.raised : colors.ground, borderColor: colors.cardRing, borderWidth: isDark ? 1 : 0 }]}
               >
                 <View style={[styles.tileIcon, { backgroundColor: colors.panel }]}>
-                  <Icon name={a.icon} size={22} color={tone(a.tone)} />
+                  <Icon name={a.icon} size={22} color={colors.ink} />
                 </View>
                 <View>
                   <Text variant="bodyStrong" style={styles.tileTitle}>

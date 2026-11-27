@@ -36,6 +36,8 @@ for (const name of ['light', 'dark']) {
   add('brandInk on brandTint', p.brandInk, p.brandTint, 4.5);
   for (const [t, v] of Object.entries(p.tones)) { add(`tone ${t}: ink on tile`, v.ink, v.tile, 4.5); add(`tone ${t}: ink on panel`, v.ink, p.panel, 4.5); }
   for (const [s, v] of Object.entries(p.status)) add(`status ${s}: ink on bg`, v.ink, v.bg, 4.5);
+  // The task screen's status button: the status name in its own ink on the secondary button.
+  for (const [s, v] of Object.entries(p.status)) add(`status ${s}: ink on status button`, v.ink, p.secondary.bg, 4.5);
   for (const [i, v] of p.avatars.entries()) add(`avatar ${i}`, v.ink, v.bg, 4.5);
   console.log(`\n== ${name}`);
   for (const r of rows) {

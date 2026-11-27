@@ -36,7 +36,6 @@ const PLAIN_TITLES: Record<string, string> = {
   'Sales Task Fallback': 'Task sent back',
   'Sales Task Detail Updated': 'Task changed',
   'Sales Task Deleted': 'Task deleted',
-  'Sales Task Rating': 'Task rated',
   'New Lead': 'New outlet',
 };
 

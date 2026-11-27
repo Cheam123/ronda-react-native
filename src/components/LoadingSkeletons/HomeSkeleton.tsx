@@ -26,7 +26,8 @@ export function HomeSkeleton({ variant, label = 'Loading' }: { variant: 'today' 
         {[0, 1, 2, 3].map((i) => (
           <View key={i} style={[large ? styles.tileRow : styles.tile, { backgroundColor: colors.panel, borderColor: colors.cardRing }]}>
             <View style={styles.tileLabel}>
-              <Bone width={8} height={8} radius={4} />
+              {/* Today's tiles have no dot now (quiet palette); Team's still do. */}
+              {variant === 'today' ? null : <Bone width={8} height={8} radius={4} />}
               <TextBone variant="captionStrong" width={large ? 140 : 84} />
             </View>
             <TextBone variant="number" width={large ? 36 : 30} />
@@ -45,7 +46,7 @@ export function HomeSkeleton({ variant, label = 'Loading' }: { variant: 'today' 
                 key={i}
                 index={i}
                 divider={i < 2}
-                shape={{ leading: large ? 'none' : 'icon', leadingSize: 42, lines: large ? ['subhead', 'subhead'] : ['subhead'] }}
+                shape={{ leading: large ? 'none' : 'icon', leadingSize: 22, lines: large ? ['subhead', 'subhead'] : ['subhead'] }}
               />
             ))}
           </SkeletonCard>

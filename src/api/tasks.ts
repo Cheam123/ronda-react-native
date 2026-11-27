@@ -41,7 +41,6 @@ export interface TaskDetail extends TaskRow {
   /** The outlet's company name (lead.name); outlet_name is the shop. */
   lead: string | null;
   lead_mobile: string | null;
-  reminder_at: string | null;
   done_remark: string | null;
   done_by: string | null;
   done_photos: MediaSet | null;

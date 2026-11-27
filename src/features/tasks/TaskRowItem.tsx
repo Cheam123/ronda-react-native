@@ -33,8 +33,10 @@ interface TaskRowItemProps {
 export function TaskRowItem({ task, onPress, onLongPress, checkable, checked = false, onCheck, last, showWho, showStatus, footnote, actions = [] }: TaskRowItemProps) {
   const colors = useColors();
   const reduced = useReducedMotion();
-  const tone = colors.tones[toneFor(task.risk)];
-  const note = dueNote({ status: task.status, risk: task.risk, dueAt: task.due_at, dueDate: task.task_due_date, dueTime: task.task_due_time });
+  // Quiet palette: the due note is red only when overdue, bold ink when at risk, grey otherwise.
+  const risk = toneFor(task.risk);
+  const noteColor = checked ? colors.muted : risk === 'critical' ? colors.tones.critical.ink : risk === 'serious' ? colors.body : colors.ink2;
+  const note =dueNote({ status: task.status, risk: task.risk, dueAt: task.due_at, dueDate: task.task_due_date, dueTime: task.task_due_time });
   const shownNote = keepTogether(note);
   const where = task.outlet_name ?? task.lead_name ?? 'No outlet';
   const who = showWho ? task.subscriber : null;
@@ -76,7 +78,7 @@ export function TaskRowItem({ task, onPress, onLongPress, checkable, checked = f
             {where}
           </Text>
         ) : (
-          <PlaceAndNote place={who ? `${who} · ${where}` : where} note={shownNote} noteColor={checked ? colors.muted : tone.ink} />
+          <PlaceAndNote place={who ? `${who} · ${where}` : where} note={shownNote} noteColor={noteColor} noteStrong={risk !== 'neutral'} />
         )}
         {showStatus ? (
           <View style={styles.statusRow}>

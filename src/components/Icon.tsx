@@ -95,6 +95,11 @@ const ICONS = {
   chevronRight: <Path d="m9 6 6 6-6 6" />,
   chevronLeft: <Path d="m15 6-6 6 6 6" />,
   chevronDown: <Path d="m6 9 6 6 6-6" />,
+  /** A pop-up choice (the status button): opens a sheet of options. */
+  chevronUpDown: <Path d="m8 9.5 4-4 4 4M8 14.5l4 4 4-4" />,
+  /** Task statuses in the status sheet: new, in progress. */
+  circle: <Circle cx={12} cy={12} r={7.5} />,
+  play: <Path d="M8.5 5.8v12.4a.6.6 0 0 0 .9.5l9.6-6.2a.6.6 0 0 0 0-1L9.4 5.3a.6.6 0 0 0-.9.5Z" />,
   search: (
     <>
       <Circle cx={11} cy={11} r={6.5} />
@@ -171,6 +176,8 @@ const ICONS = {
       <Circle cx={9} cy={17} r={2} />
     </>
   ),
+  /** Narrowing lines: the button that opens the Outlets and Tasks filter sheet. Task status signs are StatusSign. */
+  filter: <Path d="M4 7h16M7 12h10M10 17h4" />,
   clock: (
     <>
       <Circle cx={12} cy={12} r={8.5} />

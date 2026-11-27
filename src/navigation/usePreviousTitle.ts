@@ -11,7 +11,6 @@ const TITLES: Record<string, string> = {
   Review: 'Review',
   Task: 'Task',
   TaskSearch: 'Search',
-  ParkedTasks: 'Paused',
   CheckTask: 'Task',
   Me: 'Me',
   MyVisits: 'My visits',

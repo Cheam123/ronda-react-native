@@ -6,6 +6,7 @@ import type { MediaSet } from '../../api/tasks';
 import { DateField } from '../../components/DateField';
 import { Icon } from '../../components/Icon';
 import { PhotoStrip, RemotePhotos } from '../../components/PhotoStrip';
+import { PressableScale } from '../../components/Pressable';
 import { SelectField } from '../../components/SelectField';
 import { StampButton, StampedCard } from '../../components/StampCard';
 import { Text } from '../../components/Text';
@@ -266,30 +267,30 @@ function SingleChoice({ element, value, onChange, error, hint }: { element: Fiel
         {options.map((o) => {
           const on = o === value;
           return (
-            <Pressable
+            <PressableScale
               key={o}
               onPress={() => {
                 haptic.selection();
                 // Tapping the chosen one again clears an optional answer.
                 onChange(on && !element.mandatory ? null : o);
               }}
+              scaleTo={0.97}
               accessibilityRole="radio"
               accessibilityState={{ checked: on }}
-              style={({ pressed }) => [
+              style={[
                 styles.pill,
                 {
                   flexBasis: `${100 / columns - 3}%`,
                   borderWidth: on ? 2 : 1,
                   borderColor: on ? colors.brand : error ? colors.danger : colors.control,
                   backgroundColor: on ? colors.brandTint : colors.panel,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
                 },
               ]}
             >
               <Text variant="bodyStrong" align="center" color={on ? (dark ? '#A6DCF5' : colors.brandInk) : colors.body}>
                 {o}
               </Text>
-            </Pressable>
+            </PressableScale>
           );
         })}
       </View>
@@ -350,25 +351,25 @@ function ManyChoice({ element, value, onChange, error, hint }: { element: FieldE
             {g.options.map((o) => {
               const on = value.includes(o);
               return (
-                <Pressable
+                <PressableScale
                   key={o}
                   onPress={() => toggle(o)}
                   hitSlop={{ top: 4, bottom: 4 }}
+                  scaleTo={0.96}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: on }}
-                  style={({ pressed }) => [
+                  style={[
                     styles.chip,
                     on
                       ? { backgroundColor: CHIP_ON, borderColor: 'transparent', paddingLeft: 10 }
                       : { backgroundColor: colors.panel, borderColor: error ? colors.danger : colors.control },
-                    { transform: [{ scale: pressed ? 0.96 : 1 }] },
                   ]}
                 >
                   {on ? <Icon name="check" size={16} color="#FFFFFF" strokeWidth={2.8} /> : null}
                   <Text variant="captionStrong" color={on ? '#FFFFFF' : colors.body} style={styles.chipText}>
                     {o}
                   </Text>
-                </Pressable>
+                </PressableScale>
               );
             })}
           </View>

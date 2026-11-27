@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { KeyboardStickyView } from 'react-native-keyboard-controller';
+import { KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import Animated from 'react-native-reanimated';
 import { riseIn } from '../../motion/curves';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,7 +45,7 @@ export function AskRondaScreen({ route, navigation }: RootScreenProps<'AskRonda'
   const [entries, setEntries] = useState<Entry[]>([]);
   const [draft, setDraft] = useState('');
   const [unavailable, setUnavailable] = useState<string | null>(null);
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<Animated.ScrollView>(null);
   const outlet = useQuery({ queryKey: outletKeys.detail(id), queryFn: () => fetchOutlet(id) });
 
   const history = (): ChatTurn[] =>
@@ -99,7 +99,17 @@ export function AskRondaScreen({ route, navigation }: RootScreenProps<'AskRonda'
         </PressableScale>
       </View>
 
-      <ScrollView ref={scroll} contentContainerStyle={styles.thread} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: !reduced })} keyboardShouldPersistTaps="handled">
+      {/* Lifts with the keyboard, so the latest answer stays above the box you type in. */}
+      <KeyboardChatScrollView
+        ref={scroll}
+        offset={insets.bottom}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={styles.thread}
+        onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: !reduced })}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
         {entries.length === 0 ? (
           <Text variant="subhead" color="ink2" style={styles.intro}>
             Ask about this outlet. Ronda answers from its visits, orders and tasks, and can draft a follow-up message for you.
@@ -152,7 +162,7 @@ export function AskRondaScreen({ route, navigation }: RootScreenProps<'AskRonda'
             </Text>
           </View>
         ) : null}
-      </ScrollView>
+      </KeyboardChatScrollView>
 
       <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
         <View style={[styles.composer, { borderTopColor: colors.divider, backgroundColor: colors.scheme === 'dark' ? colors.raised : colors.panel, paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -308,7 +318,7 @@ const styles = StyleSheet.create({
   answerFoot: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   thinking: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  notice: { padding: 12, borderRadius: 14 },
+  notice: { padding: 12, borderRadius: radius.tile },
   composer: { borderTopWidth: 1, paddingTop: 10, gap: 10 },
   starters: { gap: 8, paddingHorizontal: 16 },
   starter: { minHeight: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, justifyContent: 'center' },

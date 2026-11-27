@@ -5,7 +5,6 @@ import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react
 import type { TaskRow } from '../../api/tasks';
 import { Icon } from '../../components/Icon';
 import { Text } from '../../components/Text';
-import { haptic } from '../../lib/haptics';
 import { useReducedMotion } from '../../motion/useReducedMotion';
 import { useColors } from '../../theme/ThemeProvider';
 
@@ -34,7 +33,7 @@ export function SwipeableTaskRow({
   const colors = useColors();
   const swipeable = useRef<SwipeableMethods>(null);
   const canFinish = !!onDone && (task.can_done_task || task.can_accept_task);
-  const parks = [onKeepInView && task.can_kiv_task ? { key: 'kiv', label: 'Keep in view', run: onKeepInView } : null, onHold && task.can_hold_task ? { key: 'hold', label: 'On hold', run: onHold } : null].filter(
+  const parks = [onKeepInView && task.can_kiv_task ? { key: 'kiv', label: 'Keep in view', run: onKeepInView } : null, onHold && task.can_hold_task ? { key: 'hold', label: 'Put on hold', run: onHold } : null].filter(
     Boolean,
   ) as { key: string; label: string; run: () => void }[];
 
@@ -58,10 +57,11 @@ export function SwipeableTaskRow({
                   <Pressable
                     key={p.key}
                     onPress={() => {
-                      haptic.light();
+                      // The park itself gives the haptic (useTaskActions), so this tap does not add a second.
                       swipeable.current?.close();
                       p.run();
                     }}
+                    accessibilityLabel={p.label}
                     accessibilityRole="button"
                     style={({ pressed }) => [styles.park, { backgroundColor: p.key === 'kiv' ? colors.tones.neutral.tile : colors.tones.serious.tile }, pressed && { opacity: 0.8 }]}
                   >

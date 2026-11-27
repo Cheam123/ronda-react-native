@@ -4,13 +4,13 @@ import { Alert, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { errorMessage } from '../../api/client';
 import { fetchTasks, taskKeys, type TaskRow } from '../../api/tasks';
-import { Card, CardSlice, ListRow } from '../../components/Card';
+import { CardSlice } from '../../components/Card';
 import { EmptyState, LoadError } from '../../components/EmptyState';
+import { FilterSheet, type FilterOption } from '../../components/FilterSheet';
 import { ListSkeleton, rowShapes } from '../../components/LoadingSkeletons';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/IconButton';
 import { TabScreen } from '../../components/Screen';
-import { Segmented } from '../../components/Segmented';
 import type { SheetHandle } from '../../components/Sheet';
 import { Text } from '../../components/Text';
 import { haptic } from '../../lib/haptics';
@@ -20,8 +20,8 @@ import { useReducedMotion } from '../../motion/useReducedMotion';
 import { useTabBarSpace } from '../../navigation/TabBar';
 import type { RepTabScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
-import { radius, space } from '../../theme/tokens';
 import { useUndo } from '../../undo/UndoProvider';
+import { StatusTaskRow } from './StatusTaskRow';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
 import { TaskPreview } from './TaskPreview';
 import { TaskRowItem } from './TaskRowItem';
@@ -36,22 +36,50 @@ const GROUPS: { key: GroupKey; title: string }[] = [
 /** How long the filled circle and strike stay before the row folds away. */
 const SETTLE_MS = 650;
 
+type Show = 'open' | 'done' | 'parked';
+
+/** What each list says under the title: which list it is, and for the narrowed ones, why the tasks are there. */
+const LISTS: Record<Show, { caption: string; lead?: string; empty: string; emptyIcon: 'tasks' | 'check' | 'pause' }> = {
+  open: { caption: 'Open tasks · most urgent first', empty: 'No open tasks', emptyIcon: 'tasks' },
+  done: {
+    caption: 'Done, waiting for checking · newest first',
+    lead: 'Each one leaves this list once it is checked.',
+    empty: 'Nothing is waiting for checking',
+    emptyIcon: 'check',
+  },
+  parked: {
+    caption: 'On hold or kept in view',
+    lead: 'These are paused. They come back to Open tasks when someone starts them again.',
+    empty: 'Nothing is on hold or kept in view',
+    emptyIcon: 'pause',
+  },
+};
+
+/**
+ * The rep's tasks. Open tasks by default, most urgent first; the filter button
+ * beside search switches to the ones done and waiting for checking, or the
+ * ones on hold or kept in view, as the Outlets tab switches its list.
+ */
 export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
   const colors = useColors();
   const reduced = useReducedMotion();
   const tabSpace = useTabBarSpace();
   const { setBottomOffset } = useUndo();
   const { markDone, pending, start, keepInView, hold } = useTaskActions();
+  const [show, setShow] = useState<Show>('open');
   const [preview, setPreview] = useState<TaskRow | null>(null);
   const previewSheet = useRef<SheetHandle>(null);
-  const [view, setView] = useState<'open' | 'done'>('open');
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   const open = useQuery({ queryKey: taskKeys.list({ status: 0 }), queryFn: () => fetchTasks({ status: 0 }) });
-  const done = useQuery({ queryKey: taskKeys.list({ status: 3 }), queryFn: () => fetchTasks({ status: 3 }), enabled: view === 'done' });
-  // Only the count is needed here; its own key keeps this one-row reply out of the Parked screen's list.
-  const parked = useQuery({ queryKey: taskKeys.list({ focus: 'parked', per_page: 1 }), queryFn: () => fetchTasks({ focus: 'parked', per_page: 1 }) });
+  // The menu's counts: one-row replies, under their own keys so they stay out of the lists they count.
+  const doneCount = useQuery({ queryKey: taskKeys.list({ status: 3, per_page: 1 }), queryFn: () => fetchTasks({ status: 3, per_page: 1 }) });
+  const parkedCount = useQuery({ queryKey: taskKeys.list({ focus: 'parked', per_page: 1 }), queryFn: () => fetchTasks({ focus: 'parked', per_page: 1 }) });
+  // The narrowed lists load when they are chosen.
+  const done = useQuery({ queryKey: taskKeys.list({ status: 3 }), queryFn: () => fetchTasks({ status: 3 }), enabled: show === 'done' });
+  const parked = useQuery({ queryKey: taskKeys.list({ focus: 'parked' }), queryFn: () => fetchTasks({ focus: 'parked' }), enabled: show === 'parked' });
+  const current = show === 'open' ? open : show === 'done' ? done : parked;
 
   // The toast sits just above the floating tab bar.
   useEffect(() => setBottomOffset(tabSpace - 12), [setBottomOffset, tabSpace]);
@@ -69,14 +97,20 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
       rows: sorted.filter((t) => groupFor({ status: t.status, risk: t.risk, dueAt: t.due_at }, now) === g.key),
     })).filter((g) => g.rows.length > 0);
   }, [openTasks]);
+  // Newest first, as the caption says: the one just marked done is on top.
+  const doneTasks = useMemo(() => [...(done.data?.tasks ?? [])].sort((a, b) => (b.done_date ?? '').localeCompare(a.done_date ?? '')), [done.data]);
+  const parkedTasks = parked.data?.tasks ?? [];
 
   const check = (task: TaskRow) => {
     if (checked.has(task.id)) return;
+    // Felt as the circle fills (or the swipe lands), not when the row folds away.
+    haptic.success();
     setChecked((s) => new Set(s).add(task.id));
     const timer = setTimeout(() => {
       markDone(
         { id: task.id, status: task.status, checker: task.checker },
         {
+          felt: true,
           onUndo: () =>
             setChecked((s) => {
               const next = new Set(s);
@@ -95,9 +129,13 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
     timers.current.set(task.id, timer);
   };
 
-  const openCount = openTasks.length;
-  const parkedCount = parked.data?.pagination?.total ?? 0;
-  const refresh = () => Promise.all([open.refetch(), parked.refetch(), view === 'done' ? done.refetch() : null]);
+  const shows: FilterOption<Show>[] = [
+    { key: 'open', label: 'Open tasks', count: open.data ? openTasks.length : undefined },
+    { key: 'done', label: 'Done, waiting for checking', count: doneCount.data?.pagination?.total },
+    { key: 'parked', label: 'On hold or kept in view', count: parkedCount.data?.pagination?.total },
+  ];
+  const list = LISTS[show];
+  const refresh = () => Promise.all([open.refetch(), doneCount.refetch(), parkedCount.refetch(), show === 'done' ? done.refetch() : show === 'parked' ? parked.refetch() : null]);
   const goTask = (t: TaskRow) => navigation.navigate('Task', { id: t.id, title: t.title });
   const lift = (t: TaskRow) => {
     haptic.light();
@@ -108,39 +146,35 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
     fn().catch((e) => Alert.alert('We could not change the task', errorMessage(e)));
   };
 
-  // One flat list for the FlatList: a title before each group, then its rows.
-  const doneTasks = done.data?.tasks ?? [];
+  // One flat list for the FlatList: open tasks in groups, each with a title; the narrowed lists in one card.
   const items: ListItem[] = [];
-  if (view === 'open' && !open.isPending && !failedToLoad(open)) {
-    for (const g of groups) {
-      items.push({ kind: 'title', key: `t-${g.key}`, title: g.title, critical: g.key === 'overdue' });
-      g.rows.forEach((t, i) => items.push({ kind: 'task', key: `r-${t.id}`, task: t, first: i === 0, last: i === g.rows.length - 1 }));
+  if (!current.isPending && !failedToLoad(current)) {
+    if (show === 'open') {
+      for (const g of groups) {
+        items.push({ kind: 'title', key: `t-${g.key}`, title: g.title });
+        g.rows.forEach((t, i) => items.push({ kind: 'task', key: `r-${t.id}`, task: t, first: i === 0, last: i === g.rows.length - 1 }));
+      }
+    } else {
+      const rows = show === 'done' ? doneTasks : parkedTasks;
+      rows.forEach((t, i) => items.push({ kind: 'status', key: `${show}-${t.id}`, task: t, first: i === 0, last: i === rows.length - 1 }));
     }
   }
-  if (view === 'done' && !done.isPending && !failedToLoad(done) && doneTasks.length) {
-    doneTasks.forEach((t, i) => items.push({ kind: 'task', key: `d-${t.id}`, task: t, first: i === 0, last: i === doneTasks.length - 1, done: true }));
-  }
+  const empty = !current.isPending && !failedToLoad(current) && items.length === 0;
 
   const renderItem = (item: ListItem) => {
     if (item.kind === 'title') {
+      // Grey: the red is on each overdue date, not on the heading as well.
       return (
-        <Text variant="captionStrong" color={item.critical ? colors.tones.critical.ink : colors.ink2} accessibilityRole="header" style={styles.groupTitle}>
+        <Text variant="captionStrong" color="ink2" accessibilityRole="header" style={styles.groupTitle}>
           {item.title}
         </Text>
       );
     }
     const t = item.task;
-    if (item.done) {
+    if (item.kind === 'status') {
       return (
         <CardSlice first={item.first} last={item.last}>
-          <TaskRowItem
-            task={t}
-            last={item.last}
-            onLongPress={() => lift(t)}
-            showStatus
-            footnote={t.checker ? `${t.checker} checks it` : undefined}
-            onPress={() => goTask(t)}
-          />
+          <StatusTaskRow task={t} last={item.last} onPress={() => goTask(t)} />
         </CardSlice>
       );
     }
@@ -170,30 +204,19 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
     );
   };
 
-  const parkedRow =
-    view === 'open' && parkedCount > 0 ? (
-      <Card style={[styles.card, styles.parked]}>
-        <ListRow onPress={() => navigation.navigate('ParkedTasks')} divider={false} chevron accessibilityLabel={`On hold or kept in view, ${parkedCount}`}>
-          <Text variant="subhead" color="body" style={styles.flex}>
-            On hold or kept in view
-          </Text>
-          <Text variant="subhead" color="ink2">
-            {parkedCount}
-          </Text>
-        </ListRow>
-      </Card>
-    ) : null;
-
   return (
     <TabScreen
       title="Tasks"
       titleAccessory={
-        <IconButton onPress={() => navigation.navigate('TaskSearch')} accessibilityLabel="Search tasks">
-          <Icon name="search" size={20} color={colors.body} strokeWidth={2} />
-        </IconButton>
+        <View style={styles.buttons}>
+          <FilterSheet<Show> title="Show tasks" options={shows} value={show} onChange={setShow} />
+          <IconButton onPress={() => navigation.navigate('TaskSearch')} accessibilityLabel="Search tasks">
+            <Icon name="search" size={20} color={colors.body} strokeWidth={2} />
+          </IconButton>
+        </View>
       }
       onRefresh={refresh}
-      list={{ data: items, keyExtractor: (item) => item.key, renderItem, footer: parkedRow, animateRows: true }}
+      list={{ data: items, keyExtractor: (item) => item.key, renderItem, animateRows: true }}
       overlay={
         <TaskPreview
           ref={previewSheet}
@@ -207,63 +230,57 @@ export function TasksScreen({ navigation }: RepTabScreenProps<'Tasks'>) {
         />
       }
     >
-      <View style={styles.segment}>
-        <Segmented
-          accessibilityLabel="Show"
-          value={view}
-          onChange={setView}
-          segments={[
-            { key: 'open', label: open.data ? `Open ${openCount}` : 'Open' },
-            { key: 'done', label: 'Done' },
-          ]}
+      {current.isPending ? (
+        <ListSkeleton
+          key={show}
+          label="Loading your tasks"
+          rows={show === 'open' ? 5 : 3}
+          shape={show === 'open' ? rowShapes.task : rowShapes.taskSign}
+          caption="captionStrong"
         />
-      </View>
-
-      {view === 'open' ? (
-        open.isPending ? (
-          <ListSkeleton label="Loading your tasks" rows={5} shape={rowShapes.task} caption="captionStrong" />
-        ) : failedToLoad(open) ? (
-          <View style={styles.block}>
-            <LoadError message={errorMessage(open.error)} onRetry={() => open.refetch()} />
-          </View>
-        ) : groups.length === 0 ? (
-          <Animated.View entering={reduced ? undefined : FadeIn.duration(260)} style={styles.block}>
-            <EmptyState icon="tasks" title="No open tasks" body="New tasks from your manager show up here." />
-          </Animated.View>
-        ) : null
-      ) : done.isPending ? (
-        <ListSkeleton label="Loading done tasks" rows={4} shape={rowShapes.taskStatus} caption="captionStrong" />
-      ) : failedToLoad(done) ? (
+      ) : failedToLoad(current) ? (
         <View style={styles.block}>
-          <LoadError message={errorMessage(done.error)} onRetry={() => done.refetch()} />
+          <LoadError message={errorMessage(current.error)} onRetry={() => current.refetch()} />
         </View>
+      ) : empty ? (
+        <Animated.View key={show} entering={reduced ? undefined : FadeIn.duration(260)} style={styles.block}>
+          {show === 'open' ? (
+            <EmptyState icon={list.emptyIcon} title={list.empty} body="New tasks from your manager show up here." />
+          ) : (
+            // The filter sits behind a button, so a narrowed list that is empty says how to get back.
+            <EmptyState
+              icon={list.emptyIcon}
+              title={list.empty}
+              body="This list is narrowed. Choose Open tasks with the filter button beside the title to see your open tasks."
+              action={{ label: 'Show open tasks', onPress: () => setShow('open') }}
+            />
+          )}
+        </Animated.View>
       ) : (
-        <>
-          <Text variant="captionStrong" color="ink2" accessibilityRole="header" style={styles.groupTitle}>
-            Waiting for checking
+        <Animated.View key={show} entering={reduced ? undefined : FadeIn.duration(260)}>
+          <Text variant="captionStrong" color="ink2" style={styles.caption} accessibilityLiveRegion="polite">
+            {list.caption}
           </Text>
-          {doneTasks.length === 0 ? (
-            <View style={styles.blockTight}>
-              <EmptyState icon="check" title="Nothing waiting" body="Tasks you mark as done wait here until they are checked." />
-            </View>
+          {list.lead ? (
+            <Text variant="subhead" color="ink2" style={styles.lead}>
+              {list.lead}
+            </Text>
           ) : null}
-        </>
+        </Animated.View>
       )}
     </TabScreen>
   );
 }
 
-/** A row of the Tasks list: a group's title, or a task in that group's card. */
+/** A row of the Tasks list: a group's title, an open task in that group's card, or a done or paused task. */
 type ListItem =
-  | { kind: 'title'; key: string; title: string; critical: boolean }
-  | { kind: 'task'; key: string; task: TaskRow; first: boolean; last: boolean; done?: boolean };
+  | { kind: 'title'; key: string; title: string }
+  | { kind: 'task' | 'status'; key: string; task: TaskRow; first: boolean; last: boolean };
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  segment: { marginTop: 16, marginHorizontal: space.gutter },
-  groupTitle: { marginTop: 24, marginBottom: 10, marginHorizontal: 20, fontSize: 15 },
-  card: { marginHorizontal: space.gutter },
-  parked: { marginTop: 12, borderRadius: radius.card },
+  buttons: { flexDirection: 'row', gap: 10 },
+  caption: { marginTop: 18, marginHorizontal: 20 },
+  lead: { marginTop: 4, marginBottom: 12, marginHorizontal: 20 },
+  groupTitle: { marginTop: 20, marginBottom: 10, marginHorizontal: 20, fontSize: 15 },
   block: { marginTop: 24 },
-  blockTight: { marginTop: 0 },
 });

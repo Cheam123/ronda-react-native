@@ -280,7 +280,7 @@ export function LogVisitScreen({ route, navigation }: RootScreenProps<'LogVisit'
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   strong: { fontFamily: fonts.semibold },
-  banner: { marginTop: 6, marginHorizontal: space.gutter, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14 },
+  banner: { marginTop: 6, marginHorizontal: space.gutter, paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.tile },
   block: { marginTop: 12, marginHorizontal: space.gutter, borderRadius: radius.card },
   outletRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
   emptyTile: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

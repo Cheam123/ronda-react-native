@@ -123,7 +123,7 @@ export function ReviewScreen({ route, navigation }: ManagerTabScreenProps<'Revie
             ))}
           </Card>
           {visits.length > shown ? (
-            <Pressable onPress={() => setShown((n) => n + PAGE)} accessibilityRole="button" style={styles.more}>
+            <Pressable onPress={() => setShown((n) => n + PAGE)} accessibilityRole="button" style={({ pressed }) => [styles.more, pressed && { opacity: 0.5 }]}>
               <Text variant="captionStrong" color="link" style={styles.moreText}>
                 Show {Math.min(PAGE, visits.length - shown)} more
               </Text>

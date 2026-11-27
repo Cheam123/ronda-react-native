@@ -15,7 +15,7 @@ import { TextField } from '../../components/TextField';
 import { haptic } from '../../lib/haptics';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
-import { TAP } from '../../theme/tokens';
+import { radius, TAP } from '../../theme/tokens';
 
 /**
  * The corner ring sits this far above the safe-area top, so its dot floats
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   forgotRow: { alignItems: 'flex-end', marginTop: -10 },
   forgot: { minHeight: 48, justifyContent: 'center' },
   forgotText: { fontSize: 15 },
-  error: { flexDirection: 'row', gap: 10, padding: 12, borderRadius: 14, alignItems: 'flex-start' },
+  error: { flexDirection: 'row', gap: 10, padding: 12, borderRadius: radius.tile, alignItems: 'flex-start' },
   errorText: { flex: 1 },
   submit: { marginTop: 4 },
   legal: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 'auto', paddingTop: 32 },

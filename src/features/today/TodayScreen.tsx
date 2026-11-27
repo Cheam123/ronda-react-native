@@ -21,7 +21,6 @@ import { dueNote, toneFor } from '../../lib/taskCopy';
 import { useNow } from '../../lib/useNow';
 import { failedToLoad } from '../../lib/query';
 import { riseIn } from '../../motion/curves';
-import { PulseDot } from '../../motion/PulseDot';
 import { useReducedMotion } from '../../motion/useReducedMotion';
 import type { RepTabScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
@@ -42,15 +41,14 @@ interface NeedItem {
   note: string;
   tone: ToneName;
   tags: Set<FilterKey>;
-  pulse: boolean;
   label: string;
 }
 
-const FILTERS: { key: FilterKey; label: string; title: string; tone: ToneName; empty: string }[] = [
-  { key: 'overdue', label: 'Overdue', title: 'Overdue', tone: 'critical', empty: 'Nothing is overdue. Good work.' },
-  { key: 'risk', label: 'At risk', title: 'At risk', tone: 'serious', empty: 'Nothing is at risk right now.' },
-  { key: 'today', label: 'Due today', title: 'Due today', tone: 'brand', empty: 'Nothing else is due today.' },
-  { key: 'forms', label: 'Forms waiting', title: 'Forms waiting on you', tone: 'form', empty: 'No forms are waiting on you.' },
+const FILTERS: { key: FilterKey; label: string; title: string; empty: string }[] = [
+  { key: 'overdue', label: 'Overdue', title: 'Overdue', empty: 'Nothing is overdue. Good work.' },
+  { key: 'risk', label: 'At risk', title: 'At risk', empty: 'Nothing is at risk right now.' },
+  { key: 'today', label: 'Due today', title: 'Due today', empty: 'Nothing else is due today.' },
+  { key: 'forms', label: 'Forms waiting', title: 'Forms waiting on you', empty: 'No forms are waiting on you.' },
 ];
 
 /** Overdue, at risk and due today, then form steps: one list, most urgent first. */
@@ -76,7 +74,6 @@ function buildNeeds(today: { overdue: DayTask[]; at_risk: DayTask[]; tasks_due: 
       note: dueNote({ status: t.status, risk: t.risk, dueDate: t.due_date, dueTime: t.due_time }, { prefix: true, now }),
       tone: toneFor(t.risk),
       tags,
-      pulse: t.risk === 'overdue',
       label: '',
     });
   };
@@ -94,7 +91,6 @@ function buildNeeds(today: { overdue: DayTask[]; at_risk: DayTask[]; tasks_due: 
     note: f.stage_type === 'approval' ? 'waiting for your approval' : f.stage_type === 'cc' ? 'for you to read' : 'your part',
     tone: 'form',
     tags: new Set<FilterKey>(['forms']),
-    pulse: false,
     label: '',
   }));
 
@@ -157,7 +153,7 @@ export function TodayScreen({ navigation }: RepTabScreenProps<'Today'>) {
           <Icon name="bell" size={22} color={colors.body} strokeWidth={1.8} />
         </IconButton>
         <PressableScale onPress={() => navigation.navigate('Me')} accessibilityLabel="Me" scaleTo={0.92} hitSlop={4}>
-          <Avatar name={user?.name ?? 'Me'} size={44} brand />
+          <Avatar name={user?.name ?? 'Me'} size={44} />
         </PressableScale>
       </View>
     </View>
@@ -189,7 +185,8 @@ export function TodayScreen({ navigation }: RepTabScreenProps<'Today'>) {
           >
             {FILTERS.map((f) => {
               const on = filter === f.key;
-              const tone = colors.tones[f.tone];
+              // Quiet palette: grey labels, no dots; only an Overdue count above 0 is red.
+              const urgent = f.key === 'overdue' && counts[f.key] > 0;
               return (
                 <PressableScale
                   key={f.key}
@@ -204,19 +201,19 @@ export function TodayScreen({ navigation }: RepTabScreenProps<'Today'>) {
                   style={[
                     large ? styles.tileRow : styles.tile,
                     {
-                      backgroundColor: on ? tone.selected : colors.panel,
-                      borderColor: on ? tone.dot : colors.cardRing,
+                      backgroundColor: colors.panel,
+                      // The chosen tile: an ink ring, not a tint.
+                      borderColor: on ? colors.ink : colors.cardRing,
                       borderWidth: on ? 2 : 1,
                     },
                   ]}
                 >
                   <View style={styles.tileLabel}>
-                    <View style={[styles.dot, { backgroundColor: tone.dot }, large && styles.dotLarge]} />
-                    <Text variant="captionStrong" color={tone.ink} style={large ? styles.tileLabelLarge : undefined}>
+                    <Text variant="captionStrong" color="ink2" style={large ? styles.tileLabelLarge : undefined}>
                       {f.label}
                     </Text>
                   </View>
-                  <Text variant="number" style={large ? styles.countLarge : undefined}>
+                  <Text variant="number" color={urgent ? colors.tones.critical.ink : undefined} style={large ? styles.countLarge : undefined}>
                     {counts[f.key]}
                   </Text>
                 </PressableScale>
@@ -232,7 +229,7 @@ export function TodayScreen({ navigation }: RepTabScreenProps<'Today'>) {
                   {current ? current.title : 'Needs you'}
                 </Text>
                 {filter !== 'all' ? (
-                  <Pressable onPress={() => setFilter('all')} accessibilityRole="button" style={styles.showAll}>
+                  <Pressable onPress={() => setFilter('all')} accessibilityRole="button" style={({ pressed }) => [styles.showAll, pressed && styles.linkPressed]}>
                     <Text variant="captionStrong" color="link" style={styles.showAllText}>
                       Show all
                     </Text>
@@ -265,24 +262,26 @@ export function TodayScreen({ navigation }: RepTabScreenProps<'Today'>) {
   );
 }
 
+/**
+ * One thing that needs the rep. Quiet palette: a plain task or form icon, no
+ * tinted tile or pulsing dot; the note is red only when overdue, bold when at
+ * risk, grey otherwise.
+ */
 function NeedRow({ item, large, last, onPress }: { item: NeedItem; large: boolean; last: boolean; onPress: () => void }) {
   const colors = useColors();
-  const tone = colors.tones[item.tone];
+  const noteColor = item.tone === 'critical' ? colors.tones.critical.ink : item.tone === 'serious' ? colors.body : colors.ink2;
   return (
     <ListRow onPress={onPress} divider={!last} chevron={!large} accessibilityLabel={item.label} style={styles.needRow}>
-      {large ? null : (
-        <View style={[styles.needTile, { backgroundColor: tone.tile }]}>
-          <Icon name={item.kind === 'form' ? 'forms' : 'tasks'} size={21} color={tone.ink} />
-          {item.pulse ? (
-            <View style={[styles.pulse, { borderColor: colors.panel, backgroundColor: colors.panel }]}>
-              <PulseDot color="#F04438" size={8} pulse />
-            </View>
-          ) : null}
-        </View>
-      )}
+      {large ? null : <Icon name={item.kind === 'form' ? 'forms' : 'tasks'} size={22} color={colors.ink2} />}
       <View style={styles.flex}>
         <Text variant="rowTitle">{item.title}</Text>
-        <PlaceAndNote place={item.where} note={item.note} noteColor={tone.ink} stack={large} />
+        <PlaceAndNote
+          place={item.where}
+          note={item.note}
+          noteColor={noteColor}
+          noteStrong={item.tone === 'critical' || item.tone === 'serious'}
+          stack={large}
+        />
       </View>
     </ListRow>
   );
@@ -382,8 +381,6 @@ const styles = StyleSheet.create({
   tileRow: { minHeight: 72, borderRadius: radius.tile, paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   tileLabel: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
   tileLabelLarge: { fontSize: 22, lineHeight: 28 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  dotLarge: { width: 12, height: 12, borderRadius: 6 },
   countLarge: { fontSize: 34, lineHeight: 40 },
   section: { marginTop: 32, marginHorizontal: space.gutter },
   sectionLarge: { marginTop: 36, marginHorizontal: space.gutter },
@@ -391,10 +388,10 @@ const styles = StyleSheet.create({
   sectionTitle: { marginHorizontal: 12, marginBottom: 12 },
   showAll: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 4 },
   showAllText: { fontSize: 15 },
+  // A text link dims under the thumb, as iOS links do.
+  linkPressed: { opacity: 0.5 },
   emptyCard: { alignItems: 'center' },
   needRow: { paddingVertical: 16, paddingHorizontal: 18 },
-  needTile: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  pulse: { position: 'absolute', top: -3, right: -3, width: 12, height: 12, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   alsoRow: { paddingVertical: 15, paddingHorizontal: 18 },
   // At least the column the board draws; larger text widens it instead of breaking "10:30 AM" in two.
   time: { minWidth: 76, fontSize: 15, lineHeight: 20 },

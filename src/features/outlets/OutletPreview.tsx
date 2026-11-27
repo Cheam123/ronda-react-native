@@ -35,7 +35,7 @@ export const OutletPreview = forwardRef<SheetHandle, { outlet: OutletRow | null;
               <SheetAction label="Directions" hint={o.address ?? undefined} onPress={run(() => openDirections({ location: o.location, address: o.address, name: outletName(o) }))} />
               {abilities.ife_report ? <SheetAction label="Log a visit" onPress={run(() => onVisit(o))} /> : null}
               {abilities.record_order ? <SheetAction label="Record an order" onPress={run(() => onOrder(o))} /> : null}
-              <SheetAction label="Open the outlet" onPress={run(() => onOpen(o))} />
+              <SheetAction label="Open the outlet" onPress={run(() => onOpen(o))} last />
             </View>
           </View>
         ) : null}

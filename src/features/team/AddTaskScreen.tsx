@@ -13,6 +13,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { DateField } from '../../components/DateField';
 import { Icon } from '../../components/Icon';
+import { PeopleSkeleton } from '../../components/LoadingSkeletons';
 import { PressableScale } from '../../components/Pressable';
 import { DetailScreen, useFieldScroll } from '../../components/Screen';
 import { SelectField } from '../../components/SelectField';
@@ -209,44 +210,47 @@ export function AddTaskScreen({ route, navigation }: RootScreenProps<'AddTask'>)
           Who does it
         </Text>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.people} accessibilityRole="radiogroup">
-        {people.map((p) => {
-          const on = p.id === who;
-          const l = load.get(p.id);
-          return (
-            <Pressable
-              key={p.id}
-              onPress={() => {
-                haptic.selection();
-                setWho(p.id);
-                setErrors(({ who: _, ...rest }) => rest);
-              }}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: on }}
-              accessibilityLabel={`${p.name}${l ? `, ${l.open} open${l.overdue ? `, ${l.overdue} overdue` : ''}` : ''}`}
-              style={({ pressed }) => [
-                styles.person,
-                { width: cardWidth, backgroundColor: on ? colors.brandTint : colors.panel, borderColor: on ? colors.brand : colors.cardRing },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Avatar name={p.name} size={52} />
-              <Text variant="captionStrong" numberOfLines={1}>
-                {firstName(p.name)}
-              </Text>
-              {/* Their load, quietly, a count a line: the line under the cards says when it is a worry. */}
-              <Text variant="caption" align="center" color="ink2" style={styles.load}>
-                {l ? [`${l.open} open`, l.overdue ? `${l.overdue} overdue` : null].filter((x): x is string => !!x).map(keepTogether).join('\n') : ' '}
-              </Text>
-              {on ? (
-                <View style={[styles.check, { backgroundColor: colors.brand }]}>
-                  <Icon name="check" size={12} color="#FFFFFF" strokeWidth={3} />
-                </View>
-              ) : null}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      {/* While the team loads, cards shaped like theirs hold the row open. */}
+      {everyone.isPending ? <PeopleSkeleton cardWidth={cardWidth} /> : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.people} accessibilityRole="radiogroup">
+          {people.map((p) => {
+            const on = p.id === who;
+            const l = load.get(p.id);
+            return (
+              <Pressable
+                key={p.id}
+                onPress={() => {
+                  haptic.selection();
+                  setWho(p.id);
+                  setErrors(({ who: _, ...rest }) => rest);
+                }}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={`${p.name}${l ? `, ${l.open} open${l.overdue ? `, ${l.overdue} overdue` : ''}` : ''}`}
+                style={({ pressed }) => [
+                  styles.person,
+                  { width: cardWidth, backgroundColor: on ? colors.brandTint : colors.panel, borderColor: on ? colors.brand : colors.cardRing },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Avatar name={p.name} size={52} />
+                <Text variant="captionStrong" numberOfLines={1}>
+                  {firstName(p.name)}
+                </Text>
+                {/* Their load, quietly, a count a line: the line under the cards says when it is a worry. */}
+                <Text variant="caption" align="center" color="ink2" style={styles.load}>
+                  {l ? [`${l.open} open`, l.overdue ? `${l.overdue} overdue` : null].filter((x): x is string => !!x).map(keepTogether).join('\n') : ' '}
+                </Text>
+                {on ? (
+                  <View style={[styles.check, { backgroundColor: colors.brand }]}>
+                    <Icon name="check" size={12} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
       <Text variant="caption" color={errors.who ? 'danger' : 'ink2'} style={styles.hint} accessibilityLiveRegion={errors.who ? 'polite' : 'none'}>
         {errors.who ?? hint}
       </Text>

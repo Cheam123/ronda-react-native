@@ -21,6 +21,8 @@ export interface RowShape {
   tagGap?: number;
   /** A pill at the right end of the row. */
   trailingTag?: 'small' | 'medium';
+  /** A status sign and word at the right end of the row (the manager's list), level with the title. */
+  trailingStatus?: boolean;
   /** The row's own padding and gap, as in the real list. */
   rowStyle?: StyleProp<ViewStyle>;
   /** Text centred on the leading picture, or from its top. */
@@ -39,12 +41,14 @@ export const rowShapes = {
   task: { leading: 'check', lines: ['subhead'], rowStyle: { paddingVertical: 14, paddingLeft: 6, paddingRight: 14, gap: 8 } },
   /** A task with no circle (an outlet's tasks, paused ones). */
   taskPlain: { lines: ['subhead'], rowStyle: { paddingVertical: 16, paddingLeft: 12, paddingRight: 14 } },
+  /** A done or paused task on the Tasks tab: its grey sign, title, place and state. */
+  taskSign: { leading: 'icon', leadingSize: 22, align: 'top', lines: ['caption', 'caption'], rowStyle: { paddingVertical: 16, paddingHorizontal: 18 } },
   /** A task with its status pill under it (done tasks, search). */
   taskStatus: { lines: ['subhead'], tag: 'medium', rowStyle: { paddingVertical: 16, paddingLeft: 12, paddingRight: 14 } },
   /** The manager's task list: who, the task, its status. */
-  managerTask: { leading: 'avatar', leadingSize: 36, align: 'top', title: 'bodyStrong', lines: ['caption'], trailingTag: 'small', rowStyle: { paddingVertical: 14, paddingHorizontal: 18, gap: 12, minHeight: 64 } },
-  /** An outlet: its tile, name, kind and a pill. */
-  outlet: { leading: 'tile', leadingSize: 44, lines: ['caption'], tag: 'small', tagGap: 6, rowStyle: { paddingVertical: 14, paddingHorizontal: 18 } },
+  managerTask: { leading: 'avatar', leadingSize: 36, align: 'top', title: 'bodyStrong', lines: ['caption'], trailingStatus: true, rowStyle: { paddingVertical: 14, paddingHorizontal: 18, gap: 12, minHeight: 64 } },
+  /** An outlet: its tile, name, kind, and its open work as a line. */
+  outlet: { leading: 'tile', leadingSize: 44, lines: ['caption', 'caption'], rowStyle: { paddingVertical: 14, paddingHorizontal: 18 } },
   /** Review: who sent it, what and when. */
   review: { leading: 'avatar', leadingSize: 40, align: 'top', lines: ['caption'], rowStyle: { paddingVertical: 16, paddingHorizontal: 18 } },
   /** A focus alert: its icon tile, title and two lines. */
@@ -64,7 +68,7 @@ export const rowShapes = {
 /** One row's bones, laid out like the real row. */
 export function SkeletonRow({ index = 0, shape, divider }: { index?: number; shape: RowShape; divider?: boolean }) {
   const colors = useColors();
-  const { leading = 'none', leadingSize = 44, title = 'rowTitle', lines = ['subhead'], tag, tagGap = 8, trailingTag, rowStyle, align = 'center' } = shape;
+  const { leading = 'none', leadingSize = 44, title = 'rowTitle', lines = ['subhead'], tag, tagGap = 8, trailingTag, trailingStatus = false, rowStyle, align = 'center' } = shape;
   return (
     <View
       style={[
@@ -93,6 +97,7 @@ export function SkeletonRow({ index = 0, shape, divider }: { index?: number; sha
         {tag ? <Bone width={84} height={TAG_HEIGHT[tag]} radius={radii.pill} style={{ marginTop: tagGap }} /> : null}
       </View>
       {trailingTag ? <Bone width={78} height={TAG_HEIGHT[trailingTag]} radius={radii.pill} /> : null}
+      {trailingStatus ? <TextBone variant="footnote" width={72} /> : null}
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import { Easing, withDelay, withTiming } from 'react-native-reanimated';
+import { Easing, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 
 /**
  * Ronda's motion in one place: calm and exact. Things ease out and come to
@@ -30,6 +30,20 @@ export function riseIn(delay = 0, duration = 280) {
       animations: {
         opacity: withDelay(delay, withTiming(1, { duration, easing: EASE_OUT })),
         transform: [{ translateY: withDelay(delay, withTiming(0, { duration, easing: EASE_OUT })) }],
+      },
+    };
+  };
+}
+
+/** A tick landing on a chosen row (the status sheet): one small give, then still. */
+export function tickIn() {
+  return () => {
+    'worklet';
+    return {
+      initialValues: { opacity: 0, transform: [{ scale: 0.5 }] },
+      animations: {
+        opacity: withTiming(1, { duration: 120, easing: EASE_OUT }),
+        transform: [{ scale: withSpring(1, { duration: LAND.duration, dampingRatio: LAND.dampingRatio }) }],
       },
     };
   };

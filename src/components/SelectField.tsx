@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { haptic } from '../lib/haptics';
 import { useColors } from '../theme/ThemeProvider';
+import { space } from '../theme/tokens';
 import { Icon } from './Icon';
 import { Sheet, type SheetHandle } from './Sheet';
 import { Text } from './Text';
@@ -106,7 +107,8 @@ export function SelectField<V extends string | number>(props: SingleProps<V> | M
         </Text>
       ) : null}
 
-      <Sheet ref={sheet} title={label} snapPoints={options.length > 6 || searchable ? ['70%', '92%'] : ['50%', '80%']} onDismiss={() => setQuery('')}>
+      {/* A short list is as tall as its options, so it never opens on empty space; a long or searchable one keeps the two heights. */}
+      <Sheet ref={sheet} title={label} fit={options.length <= 6 && !searchable} snapPoints={['70%', '92%']} onDismiss={() => setQuery('')}>
         {searchable ? (
           <View style={styles.search}>
             <TextField inSheet value={query} onChangeText={setQuery} placeholder="Search" accessibilityLabel={`Search ${label}`} leading={<Icon name="search" size={20} color={colors.muted} strokeWidth={2} />} />
@@ -128,7 +130,7 @@ export function SelectField<V extends string | number>(props: SingleProps<V> | M
                   accessibilityRole={props.multiple ? 'checkbox' : 'radio'}
                   accessibilityState={{ checked: on }}
                   accessibilityLabel={o.hint ? `${o.label}. ${o.hint}` : o.label}
-                  style={({ pressed }) => [styles.option, { borderBottomColor: colors.divider }, pressed && { backgroundColor: colors.pressed }]}
+                  style={({ pressed }) => [styles.option, pressed && { backgroundColor: colors.pressedRaised }]}
                 >
                   <View style={styles.flex}>
                     <Text variant="body" style={on ? styles.on : undefined}>
@@ -148,6 +150,8 @@ export function SelectField<V extends string | number>(props: SingleProps<V> | M
                     <Icon name="check" size={20} color={colors.brand} strokeWidth={2.6} />
                   ) : null}
                 </Pressable>
+                {/* Inset like the text; the highlight above runs edge to edge. */}
+                {i < visible.length - 1 ? <View style={[styles.divider, { backgroundColor: colors.dividerRaised }]} /> : null}
               </View>
             );
           })}
@@ -169,7 +173,8 @@ const styles = StyleSheet.create({
   search: { marginTop: 12 },
   options: { marginTop: 8 },
   group: { marginTop: 16, marginBottom: 4 },
-  option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: space.side, marginHorizontal: -space.side },
+  divider: { height: 1 },
   on: { fontFamily: 'InstrumentSans_600SemiBold' },
   check: { width: 24, height: 24, borderRadius: 7, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   none: { marginTop: 12 },

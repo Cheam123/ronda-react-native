@@ -14,7 +14,7 @@ import { haptic } from '../../lib/haptics';
 import { failedToLoad } from '../../lib/query';
 import type { RootScreenProps } from '../../navigation/types';
 import { useColors } from '../../theme/ThemeProvider';
-import { space } from '../../theme/tokens';
+import { radius, space } from '../../theme/tokens';
 
 /** The whole visit brief, in its four sections. */
 export function VisitBriefScreen({ route }: RootScreenProps<'VisitBrief'>) {
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 8 },
   meta: { marginHorizontal: 20, marginTop: 6 },
   block: { marginTop: 20 },
-  stale: { marginTop: 14, marginHorizontal: space.gutter, padding: 12, borderRadius: 14 },
+  stale: { marginTop: 14, marginHorizontal: space.gutter, padding: 12, borderRadius: radius.tile },
   section: { marginTop: 14, marginHorizontal: space.gutter },
   lines: { marginTop: 8, gap: 10 },
   line: { flexDirection: 'row', gap: 12 },

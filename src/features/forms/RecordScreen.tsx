@@ -378,37 +378,42 @@ export function RecordScreen({ route, navigation }: RootScreenProps<'Record'>) {
       ) : null}
 
       <Sheet ref={more} title="More" fit>
-        {canFillAgain && !(e.status === 'rejected' || e.status === 'cancelled') ? (
-          <SheetAction
-            label="Fill in again"
-            hint="A new record with these answers to start from"
-            onPress={() => {
-              more.current?.close();
-              fillAgain();
-            }}
-          />
-        ) : null}
-        {r.can_follow_up ? (
-          <SheetAction
-            label="Start a follow-up"
-            hint="A new record linked to this one, for a return visit"
-            onPress={() => {
-              more.current?.close();
-              followUp();
-            }}
-          />
-        ) : null}
-        {r.can_close ? (
-          <SheetAction
-            label="Close this record"
-            hint={e.status === 'pending' ? 'It stops here, and the steps still waiting are cancelled' : 'No more work happens on it'}
-            tone="danger"
-            onPress={() => {
-              more.current?.close();
-              closeSheet.current?.open();
-            }}
-          />
-        ) : null}
+        <View style={styles.moreBody}>
+          {canFillAgain && !(e.status === 'rejected' || e.status === 'cancelled') ? (
+            <SheetAction
+              label="Fill in again"
+              hint="A new record with these answers to start from"
+              last={!r.can_follow_up && !r.can_close}
+              onPress={() => {
+                more.current?.close();
+                fillAgain();
+              }}
+            />
+          ) : null}
+          {r.can_follow_up ? (
+            <SheetAction
+              label="Start a follow-up"
+              hint="A new record linked to this one, for a return visit"
+              last={!r.can_close}
+              onPress={() => {
+                more.current?.close();
+                followUp();
+              }}
+            />
+          ) : null}
+          {r.can_close ? (
+            <SheetAction
+              label="Close this record"
+              hint={e.status === 'pending' ? 'It stops here, and the steps still waiting are cancelled' : 'No more work happens on it'}
+              tone="danger"
+              last
+              onPress={() => {
+                more.current?.close();
+                closeSheet.current?.open();
+              }}
+            />
+          ) : null}
+        </View>
       </Sheet>
 
       <Sheet
@@ -702,6 +707,8 @@ function Chevron({ open }: { open: boolean }) {
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   wide: { flex: 1.3 },
+  // The same room under the title as every other More sheet.
+  moreBody: { marginTop: 8 },
   strong: { fontFamily: fonts.semibold },
   bar: { flex: 1, flexDirection: 'row', gap: 10 },
   head: { paddingHorizontal: 20, paddingTop: 12 },
